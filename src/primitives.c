@@ -1,5 +1,5 @@
 /*
- * Simple lisp parser
+ * Simple lisp interpreter
  *
  * Copyright (C) 2014 Ron Pedde (ron@pedde.com)
  *
@@ -38,7 +38,8 @@ void *safe_malloc(size_t size) {
 }
 
 char *safe_strdup(char *str) {
-    char *result = safe_malloc(strlen(str));
+    char *result = safe_malloc(strlen(str) + 1);
+    strcat(result, str);
     return result;
 }
 
@@ -121,3 +122,45 @@ lisp_value_t *lisp_create_bool(int value) {
     return lisp_create_type((void*)&value, l_bool);
 }
 
+/**
+ * print a value to a fd, in a debug form
+ */
+void lisp_dump_value(int fd, lisp_value_t *value, int level) {
+    switch(value->type) {
+    case l_int:
+        dprintf(fd, "%d", value->value.i.value);
+        break;
+    case l_float:
+        dprintf(fd, "%0.16g", value->value.f.value);
+        break;
+    case l_bool:
+        dprintf(fd, "%s", value->value.b.value ? "#t": "#f");
+        break;
+    case l_symbol:
+        dprintf(fd, "%s", value->value.s.value);
+        break;
+    case l_string:
+        dprintf(fd, "\"%s\"", value->value.c.value);
+        break;
+    case l_pair:
+        dprintf(fd, "(");
+        lisp_value_t *v = value;
+        while(v && v->value.p.car) {
+            lisp_dump_value(fd, v->value.p.car, level + 1);
+            if(v->value.p.cdr && (v->value.p.cdr->type != l_pair)) {
+                dprintf(fd, " . ");
+                lisp_dump_value(fd, v->value.p.cdr, level + 1);
+                v = NULL;
+            } else {
+                v = v->value.p.cdr;
+                dprintf(fd, "%s", v ? " " : "");
+            }
+        }
+        dprintf(fd, ")");
+        break;
+        
+    default:
+        // missing a type check.
+        assert(0);
+    }
+}

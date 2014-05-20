@@ -1,5 +1,5 @@
 /*
- * Simple lisp parser
+ * Simple lisp interpreter
  *
  * Copyright (C) 2014 Ron Pedde (ron@pedde.com)
  *
@@ -40,6 +40,11 @@ extern lisp_value_t *lisp_create_symbol(char *value);
 extern lisp_value_t *lisp_create_float(double value);
 extern lisp_value_t *lisp_create_int(int64_t value);
 extern lisp_value_t *lisp_create_bool(int value);
+
+/**
+ * inspection utilities
+ */
+extern void lisp_dump_value(int fd, lisp_value_t *value, int level);
 
 
 #endif /* __PRIMITIVES_H__ */

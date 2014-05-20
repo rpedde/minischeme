@@ -32,11 +32,12 @@
 
 extern int yylex(void);
 extern void yyerror(char *format, ...);
-
+extern void yyflush(void);
 
 static char *lisp_parse_input;
 static int lisp_parse_offset;
 static lisp_value_t *result;
+
 
 %}
 
@@ -54,6 +55,7 @@ static lisp_value_t *result;
 %token <s_value> STRING
 %token OPENPAREN
 %token CLOSEPAREN
+%token DOT
 
 %type <lisp_value> atom
 %type <lisp_value> list
@@ -72,6 +74,7 @@ list: OPENPAREN listitems CLOSEPAREN   { $$ = $2; }
 
 listitems: sexpr                       { $$ = lisp_create_pair($1, NULL); }
 | sexpr listitems                      { $$ = lisp_create_pair($1, $2); }
+| sexpr DOT sexpr                      { $$ = lisp_create_pair($1, $3); }
 ;
 
 atom: INTEGER    { $$ = lisp_create_int($1); }
@@ -97,9 +100,11 @@ int parser_read_input(char *buffer, int *read, int max) {
 lisp_value_t *lisp_parse_string(char *string) {
     lisp_parse_offset = 0;
     lisp_parse_input = string;
-    if(yyparse()) {
+
+    yyflush();
+
+    if(!yyparse()) {
         return result;
     }
     return NULL;
 }
-

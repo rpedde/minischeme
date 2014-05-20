@@ -42,7 +42,10 @@ symbol [^\t\r\n \)\(]*
 \(                             { return(OPENPAREN); }
 \)                             { return(CLOSEPAREN); }
 
-[0-9]*\.[0-9]+                 { yylval.f_value = atof(yytext); return(FLOAT); }
+\.                             { return(DOT); }
+
+\.[0-9]+                       { yylval.f_value = atof(yytext); return(FLOAT); }
+[0-9]+\.[0-9]*                 { yylval.f_value = atof(yytext); return(FLOAT); }
 
 [0-9]+                         { yylval.i_value = atoi(yytext); return(INTEGER); }
 
@@ -50,8 +53,9 @@ symbol [^\t\r\n \)\(]*
                                  yylval.s_value[strlen(yylval.s_value) - 1] = '\0';
                                  return(STRING); }
 
-{symbol}                       { yylval.s_value = strdup(yytext);
+{symbol}                       { yylval.s_value = (char*)strdup(yytext);
                                  return(SYMBOL); }
+
 %%
 
 void yyerror(char *format, ...) {
@@ -73,3 +77,6 @@ int yywrap(void) {
     return(-1);
 }
 
+void yyflush(void) {
+    YY_FLUSH_BUFFER;
+}

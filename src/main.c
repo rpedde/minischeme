@@ -10,6 +10,7 @@
 #include <readline/history.h>
 
 #include "lisp-types.h"
+#include "primitives.h"
 
 void usage(char *a0) {
     printf("Usage: %s [options]\n\n", a0);
@@ -18,8 +19,6 @@ void usage(char *a0) {
 
     printf("\n\n");
 }
-
-
 
 void repl(int level) {
     char prompt[30];
@@ -45,6 +44,10 @@ void repl(int level) {
         // e!
 
         // p!
+        if(parsed_value) {
+            lisp_dump_value(1, parsed_value, 0);
+            printf("\n");
+        }
 
         // and l.  ;)
         add_history(cmd);
