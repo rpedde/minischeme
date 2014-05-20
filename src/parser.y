@@ -103,6 +103,10 @@ lisp_value_t *lisp_parse_string(char *string) {
 
     yyflush();
 
+    if(strlen(string) == 0) {
+        return lisp_create_pair(NULL, NULL);
+    }
+
     if(!yyparse()) {
         return result;
     }

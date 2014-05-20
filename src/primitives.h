@@ -45,6 +45,6 @@ extern lisp_value_t *lisp_create_bool(int value);
  * inspection utilities
  */
 extern void lisp_dump_value(int fd, lisp_value_t *value, int level);
-
+extern int lisp_nilp(lisp_value_t *v);
 
 #endif /* __PRIMITIVES_H__ */

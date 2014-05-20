@@ -164,3 +164,10 @@ void lisp_dump_value(int fd, lisp_value_t *value, int level) {
         assert(0);
     }
 }
+
+int lisp_nilp(lisp_value_t *v) {
+    return(v &&
+           v->type == l_pair &&
+           v->value.p.cdr == NULL &&
+           v->value.p.car == NULL);
+}

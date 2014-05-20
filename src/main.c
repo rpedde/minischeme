@@ -44,7 +44,7 @@ void repl(int level) {
         // e!
 
         // p!
-        if(parsed_value) {
+        if(parsed_value && !lisp_nilp(parsed_value)) {
             lisp_dump_value(1, parsed_value, 0);
             printf("\n");
         }
