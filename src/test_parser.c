@@ -19,7 +19,7 @@ void test_int_parsing(void *scaffold) {
     lisp_value_t *result;
 
     result = lisp_parse_string("7");
-    
+
     assert(result->type == l_int);
     assert(L_INT(result) == 7);
 }
@@ -28,12 +28,12 @@ void test_float_parsing(void *scaffold) {
     lisp_value_t *result;
 
     result = lisp_parse_string("1.");
-    
+
     assert(result->type == l_float);
     assert(L_FLOAT(result) == 1.0);
 
     result = lisp_parse_string(".1");
-    
+
     assert(result->type == l_float);
     assert(L_FLOAT(result) == 0.1);
 }
