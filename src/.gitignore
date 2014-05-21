@@ -6,4 +6,5 @@ parser.h
 *.o
 minischeme
 stamp-h1
+selfcheck
 

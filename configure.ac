@@ -21,8 +21,10 @@ AC_SUBST(PACKAGE_VERSION)
 
 # Take a copy of original flags
 MS_ORIG_CFLAGS="${CFLAGS:-none}"
-MS__ORIG_CPPFLAGS="${CPPFLAGS:-none}"
-MS__ORIG_CXXFLAGS="${CXXFLAGS:-none}"
+MS_ORIG_CPPFLAGS="${CPPFLAGS:-none}"
+MS_ORIG_CXXFLAGS="${CXXFLAGS:-none}"
+
+CFLAGS="${CFLAGS} -D_GNU_SOURCE"
 
 # Checks for programs.
 AC_PROG_LEX
