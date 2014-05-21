@@ -5,7 +5,16 @@
 #ifndef __LISP_TYPES_H__
 #define __LISP_TYPES_H__
 
-typedef enum lisp_type_t { l_int, l_float, l_bool, l_symbol, l_string, l_pair } lisp_type_t;
+typedef enum lisp_type_t { l_int, l_float, l_bool, l_symbol, l_string, l_pair, l_hash } lisp_type_t;
+
+#define L_INT(what)     what->value.i.value
+#define L_FLOAT(what)   what->value.f.value
+#define L_BOOL(what)    what->value.b.value
+#define L_SYM(what)     what->value.s.value
+#define L_STR(what)     what->value.c.value
+#define L_CDR(what)     what->value.p.cdr
+#define L_CAR(what)     what->value.p.car
+#define L_HASH(what)    what->value.h.value
 
 struct lisp_value_t;
 
@@ -34,6 +43,10 @@ typedef struct lisp_pair_t {
     struct lisp_value_t *cdr;
 } lisp_pair_t;
 
+typedef struct lisp_hash_t {
+    void *value;
+} lisp_hash_t;
+
 typedef struct lisp_value_t {
     lisp_type_t type;
     union {
@@ -43,6 +56,7 @@ typedef struct lisp_value_t {
         lisp_symbol_t s;
         lisp_string_t c;
         lisp_pair_t p;
+        lisp_hash_t h;
     } value;
 } lisp_value_t;
 

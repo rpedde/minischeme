@@ -22,10 +22,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <search.h>
 
 #include <gc.h>
 
 #include "lisp-types.h"
+
 
 void *safe_malloc(size_t size) {
     void *result = GC_malloc(size);
@@ -43,14 +45,36 @@ char *safe_strdup(char *str) {
     return result;
 }
 
+static void s_node_free(void *nodep) {
+    /* do nothing -- values are all gc'd */
+}
+
+static void s_hash_finalizer(void *v_obj, void *v_env) {
+    lisp_value_t *obj = (lisp_value_t*)v_obj;
+
+    tdestroy(L_HASH(obj), s_node_free);
+}
+
+lisp_value_t *lisp_create_hash(void) {
+    lisp_value_t *result;
+
+    result = safe_malloc(sizeof(lisp_value_t));
+    result->type = l_hash;
+    L_HASH(result) = NULL;
+
+    /* set up a finalizer */
+    GC_register_finalizer(result, s_hash_finalizer, NULL, NULL, NULL);
+    return result;
+}
+
 lisp_value_t *lisp_create_pair(lisp_value_t *car, lisp_value_t *cdr) {
     lisp_value_t *result;
 
     result = safe_malloc(sizeof(lisp_value_t));
 
     result->type = l_pair;
-    result->value.p.car = car;
-    result->value.p.cdr = cdr;
+    L_CAR(result) = car;
+    L_CDR(result) = cdr;
 
     return result;
 }
@@ -64,19 +88,19 @@ lisp_value_t *lisp_create_type(void *value, lisp_type_t type) {
     
     switch(type) {
     case l_int:
-        result->value.i.value = *((int64_t*)value);
+        L_INT(result) = *((int64_t*)value);
         break;
     case l_float:
-        result->value.f.value = *((double*)value);
+        L_FLOAT(result) = *((double*)value);
         break;
     case l_bool:
-        result->value.b.value = *((int*)value);
+        L_BOOL(result) = *((int*)value);
         break;
     case l_symbol:
-        result->value.s.value = safe_strdup((char*)value);
+        L_SYM(result) = safe_strdup((char*)value);
         break;
     case l_string:
-        result->value.c.value = safe_strdup((char*)value);
+        L_STR(result) = safe_strdup((char*)value);
         break;
     default:
         assert(0);
@@ -145,14 +169,14 @@ void lisp_dump_value(int fd, lisp_value_t *value, int level) {
     case l_pair:
         dprintf(fd, "(");
         lisp_value_t *v = value;
-        while(v && v->value.p.car) {
-            lisp_dump_value(fd, v->value.p.car, level + 1);
-            if(v->value.p.cdr && (v->value.p.cdr->type != l_pair)) {
+        while(v && L_CAR(v)) {
+            lisp_dump_value(fd, L_CAR(v), level + 1);
+            if(L_CDR(v) && (L_CDR(v)->type != l_pair)) {
                 dprintf(fd, " . ");
-                lisp_dump_value(fd, v->value.p.cdr, level + 1);
+                lisp_dump_value(fd, L_CDR(v), level + 1);
                 v = NULL;
             } else {
-                v = v->value.p.cdr;
+                v = L_CDR(v);
                 dprintf(fd, "%s", v ? " " : "");
             }
         }
@@ -165,9 +189,15 @@ void lisp_dump_value(int fd, lisp_value_t *value, int level) {
     }
 }
 
-int lisp_nilp(lisp_value_t *v) {
-    return(v &&
-           v->type == l_pair &&
-           v->value.p.cdr == NULL &&
-           v->value.p.car == NULL);
+/**
+ * evaluate a lisp value
+ */
+lisp_value_t *lisp_eval(lisp_value_t *v) {
+    if(v->type != l_pair) {  // atom?
+        return v;
+    }
+
+    // list?
+    
 }
+

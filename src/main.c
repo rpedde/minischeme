@@ -12,6 +12,13 @@
 #include "lisp-types.h"
 #include "primitives.h"
 
+static int is_nil(lisp_value_t *v) {
+    return(v &&
+           v->type == l_pair &&
+           v->value.p.cdr == NULL &&
+           v->value.p.car == NULL);
+}
+
 void usage(char *a0) {
     printf("Usage: %s [options]\n\n", a0);
     printf("Valid options\n");
@@ -26,6 +33,7 @@ void repl(int level) {
     int quit = 0;
     int line = 1;
     lisp_value_t *parsed_value;
+    lisp_value_t *result;
 
     while(!quit) {
         snprintf(prompt, sizeof(prompt), "%d:%d> ", level, line);
@@ -42,10 +50,11 @@ void repl(int level) {
         parsed_value = lisp_parse_string(cmd);
 
         // e!
+        result = lisp_eval(parsed_value);
 
         // p!
-        if(parsed_value && !lisp_nilp(parsed_value)) {
-            lisp_dump_value(1, parsed_value, 0);
+        if(result && !is_nil(result)) {
+            lisp_dump_value(1, result, 0);
             printf("\n");
         }
 
