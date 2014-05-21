@@ -1,15 +1,19 @@
 BUILT_SOURCES = parser.h
 AM_YFLAGS = -d
 
+noinst_LTLIBRARIES = libminischeme.la
+
 bin_PROGRAMS = minischeme
 TESTS = selfcheck
 check_PROGRAMS = selfcheck
 
-minischeme_SOURCES = parser.y tokenizer.l main.c primitives.h primitives.c
-minischeme_LDADD = -lreadline -lgc
+libminischeme_la_SOURCES = parser.y tokenizer.l primitives.h primitives.c 
 
-selfcheck_SOURCES = test_parser.c parser.y tokenizer.l primitives.h primitives.c
-selfcheck_LDADD = -lreadline -lgc
+minischeme_SOURCES = main.c
+minischeme_LDADD = -lreadline -lgc libminischeme.la
+
+selfcheck_SOURCES = test_parser.c 
+selfcheck_LDADD = -lreadline -lgc libminischeme.la
 
 
 

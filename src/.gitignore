@@ -7,4 +7,7 @@ parser.h
 minischeme
 stamp-h1
 selfcheck
+.libs
+*.la
+*.lo
 
