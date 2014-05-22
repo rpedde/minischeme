@@ -4,15 +4,14 @@
 
 #include "lisp-types.h"
 #include "primitives.h"
-
-#define assert(a) { if(!(a)) return 0; }
+#include "selfcheck.h"
 
 int test_string_parsing(void *scaffold) {
     lisp_value_t *result;
 
     result = lisp_parse_string("\"this is a string\"");
 
-    assert(result->type == l_string);
+    assert(result->type == l_str);
     assert(strcmp(L_STR(result), "this is a string") == 0);
     return 1;
 }
