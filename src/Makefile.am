@@ -1,5 +1,7 @@
-BUILT_SOURCES = parser.h
+BUILT_SOURCES = parser.h test-definitions.h
 AM_YFLAGS = -d
+
+CLEANFILES = test-definitions.h
 
 noinst_LTLIBRARIES = libminischeme.la
 
@@ -12,9 +14,16 @@ libminischeme_la_SOURCES = parser.y tokenizer.l primitives.h primitives.c
 minischeme_SOURCES = main.c
 minischeme_LDADD = -lreadline -lgc libminischeme.la
 
-selfcheck_SOURCES = test_parser.c 
+selfcheck_SOURCES = selfcheck.c
 selfcheck_LDADD = -lreadline -lgc libminischeme.la
+nodist_selfcheck_SOURCES = test-definitions.h
 
+EXTRA_DIST = gentests.sh test_parser.c
+
+# build rule for test-definitions.h
+.FORCE:
+test-definitions.h: .FORCE
+	./gentests.sh
 
 
 

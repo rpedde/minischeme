@@ -10,4 +10,5 @@ selfcheck
 .libs
 *.la
 *.lo
+test-definitions.h
 
