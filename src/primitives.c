@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <search.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 #include <gc.h>
 
@@ -215,7 +216,7 @@ lisp_value_t *lisp_create_bool(int value) {
 void lisp_dump_value(int fd, lisp_value_t *v, int level) {
     switch(v->type) {
     case l_int:
-        dprintf(fd, "%d", L_INT(v));
+        dprintf(fd, "%" PRIu64, L_INT(v));
         break;
     case l_float:
         dprintf(fd, "%0.16g", L_FLOAT(v));

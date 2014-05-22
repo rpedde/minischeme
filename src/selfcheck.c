@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
 
     while((current->test_fn) && (current_errors < MAX_ERRORS)) {
         current_test = current->test_name;
-        printf("%s%*s: ", current->test_name, MAX(1, 40 - strlen(current->test_name)), " ");
+        printf("%s%*s: ", current->test_name, (int)MAX(1, 40 - strlen(current->test_name)), " ");
         result = current->test_fn(NULL);
         if(result) {
             set_color(green);
