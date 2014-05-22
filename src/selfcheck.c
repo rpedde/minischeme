@@ -15,7 +15,7 @@ typedef struct test_t {
     char *test_name;
     int (*test_fn)(void *);
 } test_t;
-    
+
 #define C(x) { #x, x },
 test_t test_list[] = { TESTS { NULL, NULL }};
 #undef C
