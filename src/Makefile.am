@@ -10,12 +10,13 @@ TESTS = selfcheck
 check_PROGRAMS = selfcheck
 
 libminischeme_la_SOURCES = parser.y tokenizer.l primitives.h primitives.c murmurhash.h murmurhash.c
+libminischeme_la_LIBADD = -lgc
 
 minischeme_SOURCES = main.c
-minischeme_LDADD = -lreadline -lgc libminischeme.la
+minischeme_LDADD = -lreadline libminischeme.la
 
 selfcheck_SOURCES = selfcheck.c
-selfcheck_LDADD = -lreadline -lgc libminischeme.la
+selfcheck_LDADD = libminischeme.la
 nodist_selfcheck_SOURCES = test-definitions.h
 
 EXTRA_DIST = gentests.sh test_parser.c
