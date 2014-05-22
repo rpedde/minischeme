@@ -1,5 +1,7 @@
 # minischeme #
 
+[![Build Status](https://travis-ci.org/rpedde/minischeme.png?branch=master)](https://travis-ci.org/rpedde/minischeme)
+
 Playing around with building a r5rs-ish scheme.  In addition to being
 a stupid re-implementation of the wheel, it also suffers from not
 being very round.
