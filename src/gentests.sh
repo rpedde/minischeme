@@ -24,7 +24,3 @@ echo
 for (( i=0; i<${#files[@]}; i++ )); do
     echo "#include \"${files[$i]}\""
 done
-
-
-
-
