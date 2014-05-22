@@ -85,7 +85,7 @@ lisp_value_t *c_hash_fetch(lisp_value_t *hash, lisp_value_t *key) {
     if(!result)
         return NULL;
 
-    return ((hash_node_t *)result)->value;
+    return (*(hash_node_t **)result)->value;
 }
 
 int c_hash_insert(lisp_value_t *hash, 
