@@ -239,8 +239,8 @@ void lisp_dump_value(int fd, lisp_value_t *v, int level) {
                 lisp_dump_value(fd, L_CDR(vp), level + 1);
                 vp = NULL;
             } else {
-                vp = L_CDR(v);
-                dprintf(fd, "%s", v ? " " : "");
+                vp = L_CDR(vp);
+                dprintf(fd, "%s", vp ? " " : "");
             }
         }
         dprintf(fd, ")");
@@ -261,6 +261,6 @@ lisp_value_t *lisp_eval(lisp_value_t *v) {
     }
 
     // list?
-    
+    return v;
 }
 
