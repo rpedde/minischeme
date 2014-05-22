@@ -1,11 +1,27 @@
 /*
+ * Simple lisp interpreter
  *
+ * Copyright (C) 2014 Ron Pedde (ron@pedde.com)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 #ifndef __LISP_TYPES_H__
 #define __LISP_TYPES_H__
 
-typedef enum lisp_type_t { l_int, l_float, l_bool, l_symbol, l_string, l_pair, l_hash } lisp_type_t;
+typedef enum lisp_type_t { l_int, l_float, l_bool, l_sym, l_str, l_pair, l_hash } lisp_type_t;
 
 #define L_INT(what)     what->value.i.value
 #define L_FLOAT(what)   what->value.f.value
@@ -45,6 +61,7 @@ typedef struct lisp_pair_t {
 
 typedef struct lisp_hash_t {
     void *value;
+    lisp_type_t index_type;
 } lisp_hash_t;
 
 typedef struct lisp_value_t {

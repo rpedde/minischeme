@@ -43,6 +43,18 @@ extern lisp_value_t *lisp_create_bool(int value);
 extern lisp_value_t *lisp_create_hash(void);
 
 /**
+ * hash utilities
+ */
+extern lisp_value_t *c_hash_fetch(lisp_value_t *hash, 
+                                  lisp_value_t *key);
+extern int c_hash_delete(lisp_value_t *hash, 
+                         lisp_value_t *key);
+extern int c_hash_insert(lisp_value_t *hash, 
+                         lisp_value_t *key, 
+                         lisp_value_t *value);
+
+
+/**
  * inspection utilities
  */
 extern void lisp_dump_value(int fd, lisp_value_t *value, int level);
@@ -52,5 +64,10 @@ extern void lisp_dump_value(int fd, lisp_value_t *value, int level);
  * actual language items
  */
 extern lisp_value_t *lisp_eval(lisp_value_t *v);
+
+/**
+ * runtime asserts
+ */
+#define rt_assert(a, msg) assert((a))
 
 #endif /* __PRIMITIVES_H__ */

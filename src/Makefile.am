@@ -9,7 +9,7 @@ bin_PROGRAMS = minischeme
 TESTS = selfcheck
 check_PROGRAMS = selfcheck
 
-libminischeme_la_SOURCES = parser.y tokenizer.l primitives.h primitives.c 
+libminischeme_la_SOURCES = parser.y tokenizer.l primitives.h primitives.c murmurhash.h murmurhash.c
 
 minischeme_SOURCES = main.c
 minischeme_LDADD = -lreadline -lgc libminischeme.la
