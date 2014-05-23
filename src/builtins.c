@@ -25,14 +25,15 @@
 
 #include "lisp-types.h"
 #include "primitives.h"
+#include "builtins.h"
 
-static lisp_type_t *s_is_type(lisp_value_t *v, lisp_type_t t) {
+static lisp_value_t *s_is_type(lisp_value_t *v, lisp_type_t t) {
     if(v->type == t)
         return lisp_create_bool(1);
     return lisp_create_bool(0);
 }
 
-lisp_type_t *nullp(lisp_type_t *v) {
+lisp_value_t *nullp(lisp_value_t *v) {
     if((v->type == l_pair) &&
        (L_CAR(v) == NULL) &&
        (L_CDR(v) == NULL))
@@ -40,24 +41,25 @@ lisp_type_t *nullp(lisp_type_t *v) {
     return lisp_create_bool(0);
 }
 
-lisp_type_t *symbolp(lisp_type_t *v) {
-    return s_is_type(v, l_symbol);
+lisp_value_t *symbolp(lisp_value_t *v) {
+    return s_is_type(v, l_sym);
 }
 
-lisp_type_t *atomp(lisp_type_t *v) {
+lisp_value_t *atomp(lisp_value_t *v) {
     if(v->type != l_pair)
         return lisp_create_bool(1);
     return lisp_create_bool(0);
 }
 
-lisp_type_t *consp(lisp_type_t *v) {
+lisp_value_t *consp(lisp_value_t *v) {
     return s_is_type(v, l_pair);
 }
 
-lisp_type_t *listp(lisp_type_t *v) {
+lisp_value_t *listp(lisp_value_t *v) {
     if((v->type == l_pair) &&
        (L_CAR(v) == NULL) &&
        (L_CDR(v) == NULL))
-        return lisp_creat_bool(1);
-    return consp(lisp_type_t
+        return lisp_create_bool(1);
+    return consp(v);
 }
+

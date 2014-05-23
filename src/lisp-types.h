@@ -21,7 +21,9 @@
 #ifndef __LISP_TYPES_H__
 #define __LISP_TYPES_H__
 
-typedef enum lisp_type_t { l_int, l_float, l_bool, l_sym, l_str, l_pair, l_hash } lisp_type_t;
+typedef enum lisp_type_t { l_int, l_float, l_bool, l_sym, l_str, l_pair, l_hash, l_fn } lisp_type_t;
+
+#define NIL lisp_create_pair(NULL, NULL)
 
 #define L_INT(what)     what->value.i.value
 #define L_FLOAT(what)   what->value.f.value
@@ -31,8 +33,9 @@ typedef enum lisp_type_t { l_int, l_float, l_bool, l_sym, l_str, l_pair, l_hash 
 #define L_CDR(what)     what->value.p.cdr
 #define L_CAR(what)     what->value.p.car
 #define L_HASH(what)    what->value.h.value
+#define L_FN(what)      what->value.l.fn
 
-struct lisp_value_t;
+typedef struct lisp_value_t lisp_value_t;
 
 typedef struct lisp_int_t {
     int64_t value;
@@ -55,8 +58,8 @@ typedef struct lisp_string_t {
 } lisp_string_t;
 
 typedef struct lisp_pair_t {
-    struct lisp_value_t *car;
-    struct lisp_value_t *cdr;
+    lisp_value_t *car;
+    lisp_value_t *cdr;
 } lisp_pair_t;
 
 typedef struct lisp_hash_t {
@@ -64,7 +67,11 @@ typedef struct lisp_hash_t {
     lisp_type_t index_type;
 } lisp_hash_t;
 
-typedef struct lisp_value_t {
+typedef struct lisp_fn_t {
+    lisp_value_t *(*fn)(lisp_value_t *);
+} lisp_fn_t;
+
+struct lisp_value_t {
     lisp_type_t type;
     union {
         lisp_int_t i;
@@ -74,8 +81,9 @@ typedef struct lisp_value_t {
         lisp_string_t c;
         lisp_pair_t p;
         lisp_hash_t h;
+        lisp_fn_t l;
     } value;
-} lisp_value_t;
+};
 
 /** given a native c type, box it into a lisp type struct */
 extern lisp_value_t *lisp_create_type(void *value, lisp_type_t type);

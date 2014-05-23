@@ -39,3 +39,11 @@ int test_hash_functions(void *scaffold) {
 
     return 1;
 }
+
+int test_environment(void *scaffold) {
+    /* get an env */
+    lisp_value_t *env = scheme_report_environment(NIL);
+    
+    /* make sure it's not empty */
+    return 1;
+}
