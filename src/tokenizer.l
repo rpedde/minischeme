@@ -53,6 +53,9 @@ symbol [^\t\r\n \)\(]*
                                  yylval.s_value[strlen(yylval.s_value) - 1] = '\0';
                                  return(STRING); }
 
+\#t                            { yylval.i_value = 1; return(BOOL); }
+\#f                            { yylval.i_value = 0; return(BOOL); }
+
 {symbol}                       { yylval.s_value = (char*)strdup(yytext);
                                  return(SYMBOL); }
 
