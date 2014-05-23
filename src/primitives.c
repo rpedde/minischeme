@@ -30,12 +30,29 @@
 
 #include "lisp-types.h"
 #include "primitives.h"
+#include "builtins.h"
 #include "murmurhash.h"
 
 typedef struct hash_node_t {
     uint32_t key;
     lisp_value_t *value;
 } hash_node_t;
+
+typedef struct environment_list_t {
+    char *name;
+    lisp_value_t *(*fn)(lisp_value_t *);
+} environment_list_t;
+
+static environment_list_t s_r5_list[] = {
+    { "null?", nullp },
+    { "symbol?", symbolp },
+    { "atom?", atomp },
+    { "cons?", consp },
+    { "list?", listp },
+    { "null-environment", null_environment },
+    { "scheme-report-environment", scheme_report_environment },
+    { NULL, NULL }
+};
 
 void *safe_malloc(size_t size) {
     void *result = GC_malloc(size);
@@ -166,6 +183,9 @@ lisp_value_t *lisp_create_type(void *value, lisp_type_t type) {
     case l_str:
         L_STR(result) = safe_strdup((char*)value);
         break;
+    case l_fn:
+        L_FN(result) = (lisp_value_t *(*)(lisp_value_t *))value;
+        break;
     default:
         assert(0);
         fprintf(stderr, "Bad type");
@@ -208,6 +228,13 @@ lisp_value_t *lisp_create_int(int64_t value) {
  */
 lisp_value_t *lisp_create_bool(int value) {
     return lisp_create_type((void*)&value, l_bool);
+}
+
+/**
+ * typechecked wrapper around lisp_create_type for functions
+ */
+lisp_value_t *lisp_create_fn(lisp_value_t *(*value)(lisp_value_t*)) {
+    return lisp_create_type((void*)&value, l_fn);
 }
 
 /**
@@ -263,5 +290,27 @@ lisp_value_t *lisp_eval(lisp_value_t *v) {
 
     // list?
     return v;
+}
+
+/**
+ * hard to get to the rest of the functions without
+ * having primitive access to environments, so...
+ */
+lisp_value_t *null_environment(lisp_value_t *v) {
+    lisp_value_t *env = lisp_create_hash();
+    return env;
+}
+
+lisp_value_t *scheme_report_environment(lisp_value_t *v) {
+    environment_list_t *current = s_r5_list;
+    lisp_value_t *env = null_environment(v);
+
+    while(current && current->name) {
+        c_hash_insert(env, lisp_create_string(current->name),
+                      lisp_create_fn(current->fn));
+        current++;
+    }
+
+    return env;
 }
 

@@ -62,7 +62,7 @@ int set_color(color_t color) {
 
 int main(int argc, char *argv[]) {
     test_t *current = test_list;
-    int success=1;
+    int success = 1;
     int result;
 
     printf("Testing.\n------------------------------------------------\n");
@@ -77,12 +77,12 @@ int main(int argc, char *argv[]) {
         } else {
             set_color(red);
             printf("Error");
+            success = 0;
         }
         
         set_color(none);
         printf("\n");
 
-        success &= result;
         current++;
     }
 
