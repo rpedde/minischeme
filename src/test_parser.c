@@ -41,6 +41,20 @@ int test_float_parsing(void *scaffold) {
     return 1;
 }
 
+int test_bool_parsing(void *scaffold) {
+  lisp_value_t *result;
+
+  result = lisp_parse_string("#t");
+
+  assert(result->type == l_bool);
+  assert(L_BOOL(result) == 1);
+
+  result = lisp_parse_string("#f");
+  assert(result->type == l_bool);
+  assert(L_BOOL(result) == 0);
+  return 1;
+}
+
 int test_list_parsing(void *scaffold) {
     lisp_value_t *result;
     result = lisp_parse_string("()");
@@ -83,6 +97,5 @@ int test_list_parsing(void *scaffold) {
     assert(L_CDR(L_CDR(result)) == NULL);
     assert(L_INT(L_CAR(result)) == 1);
     assert(L_INT(L_CAR(L_CDR(result))) == 1);
-
     return 1;
 }
