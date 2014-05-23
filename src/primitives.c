@@ -136,6 +136,12 @@ int c_hash_delete(lisp_value_t *hash, lisp_value_t *key) {
     return(result != NULL);
 }
 
+lisp_value_t *lisp_create_null(void) {
+    lisp_value_t *result = safe_malloc(sizeof(lisp_value_t));
+    result->type = l_null;
+    return result;
+}
+
 lisp_value_t *lisp_create_hash(void) {
     lisp_value_t *result;
 
@@ -155,7 +161,11 @@ lisp_value_t *lisp_create_pair(lisp_value_t *car, lisp_value_t *cdr) {
 
     result->type = l_pair;
     L_CAR(result) = car;
-    L_CDR(result) = cdr;
+
+    if(cdr && cdr->type == l_null)
+        L_CDR(result) = NULL;
+    else
+        L_CDR(result) = cdr;
 
     return result;
 }
@@ -242,6 +252,9 @@ lisp_value_t *lisp_create_fn(lisp_value_t *(*value)(lisp_value_t*)) {
  */
 void lisp_dump_value(int fd, lisp_value_t *v, int level) {
     switch(v->type) {
+    case l_null:
+        dprintf(fd, "()");
+        break;
     case l_int:
         dprintf(fd, "%" PRIu64, L_INT(v));
         break;

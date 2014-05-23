@@ -29,10 +29,7 @@
 #include "primitives.h"
 
 static int is_nil(lisp_value_t *v) {
-    return(v &&
-           v->type == l_pair &&
-           v->value.p.cdr == NULL &&
-           v->value.p.car == NULL);
+    return(v && v->type == l_null);
 }
 
 void usage(char *a0) {
