@@ -55,6 +55,15 @@ int test_bool_parsing(void *scaffold) {
   return 1;
 }
 
+int test_sym_parsing(void *scaffold) {
+    lisp_value_t *result;
+
+    result = lisp_parse_string("aks...");
+    assert(result->type == l_sym);
+    assert(strcmp(L_SYM(result), "aks...") == 0);
+    return 1;
+}
+
 int test_list_parsing(void *scaffold) {
     lisp_value_t *result;
     result = lisp_parse_string("()");
