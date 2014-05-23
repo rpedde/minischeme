@@ -58,7 +58,7 @@ int test_bool_parsing(void *scaffold) {
 int test_list_parsing(void *scaffold) {
     lisp_value_t *result;
     result = lisp_parse_string("()");
-    assert(result == NULL); // this might be its own lisp type?
+    assert(result->type == l_null);
 
     result = lisp_parse_string("(1)");
     assert(result->type == l_pair);

@@ -41,6 +41,7 @@ extern lisp_value_t *lisp_create_float(double value);
 extern lisp_value_t *lisp_create_int(int64_t value);
 extern lisp_value_t *lisp_create_bool(int value);
 extern lisp_value_t *lisp_create_hash(void);
+extern lisp_value_t *lisp_create_null(void);
 
 /**
  * hash utilities

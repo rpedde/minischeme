@@ -69,7 +69,7 @@ sexpr: atom                        { result = $1; }
 ;
 
 list: OPENPAREN listitems CLOSEPAREN   { $$ = $2; }
-| OPENPAREN CLOSEPAREN                 { $$ = lisp_create_pair(NULL, NULL); }
+| OPENPAREN CLOSEPAREN                 { $$ = lisp_create_null(); }
 ;
 
 listitems: sexpr                       { $$ = lisp_create_pair($1, NULL); }

@@ -21,9 +21,7 @@
 #ifndef __LISP_TYPES_H__
 #define __LISP_TYPES_H__
 
-typedef enum lisp_type_t { l_int, l_float, l_bool, l_sym, l_str, l_pair, l_hash, l_fn } lisp_type_t;
-
-#define NIL lisp_create_pair(NULL, NULL)
+typedef enum lisp_type_t { l_int, l_float, l_bool, l_sym, l_str, l_pair, l_hash, l_null, l_fn } lisp_type_t;
 
 #define L_INT(what)     what->value.i.value
 #define L_FLOAT(what)   what->value.f.value
@@ -67,11 +65,14 @@ typedef struct lisp_hash_t {
     lisp_type_t index_type;
 } lisp_hash_t;
 
+typedef struct lisp_null_t {
+} lisp_null_t;
+
 typedef struct lisp_fn_t {
     lisp_value_t *(*fn)(lisp_value_t *);
 } lisp_fn_t;
 
-struct lisp_value_t {
+typedef struct lisp_value_t {
     lisp_type_t type;
     union {
         lisp_int_t i;
@@ -83,7 +84,7 @@ struct lisp_value_t {
         lisp_hash_t h;
         lisp_fn_t l;
     } value;
-};
+} lisp_value_t;
 
 /** given a native c type, box it into a lisp type struct */
 extern lisp_value_t *lisp_create_type(void *value, lisp_type_t type);
