@@ -42,7 +42,7 @@ int test_hash_functions(void *scaffold) {
 
 int test_environment(void *scaffold) {
     /* get an env */
-    lisp_value_t *env = scheme_report_environment(lisp_create_null());
+    lisp_value_t *env = scheme_report_environment(NULL, NULL);
 
     /* make sure it's not empty */
     return 1;

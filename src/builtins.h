@@ -21,10 +21,10 @@
 #ifndef __BUILTINS_H__
 #define __BUILTINS_H__
 
-lisp_value_t *nullp(lisp_value_t *v);
-lisp_value_t *symbolp(lisp_value_t *v);
-lisp_value_t *atomp(lisp_value_t *v);
-lisp_value_t *consp(lisp_value_t *v);
-lisp_value_t *listp(lisp_value_t *v);
+lisp_value_t *nullp(lisp_value_t *env, lisp_value_t *v);
+lisp_value_t *symbolp(lisp_value_t *env, lisp_value_t *v);
+lisp_value_t *atomp(lisp_value_t *env, lisp_value_t *v);
+lisp_value_t *consp(lisp_value_t *env, lisp_value_t *v);
+lisp_value_t *listp(lisp_value_t *env, lisp_value_t *v);
 
 #endif /* __BUILTINS_H__ */

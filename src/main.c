@@ -47,6 +47,7 @@ void repl(int level) {
     int line = 1;
     lisp_value_t *parsed_value;
     lisp_value_t *result;
+    lisp_value_t *env = scheme_report_environment(NULL, NULL);
 
     while(!quit) {
         snprintf(prompt, sizeof(prompt), "%d:%d> ", level, line);
@@ -63,7 +64,7 @@ void repl(int level) {
         parsed_value = lisp_parse_string(cmd);
 
         // e!
-        result = lisp_eval(parsed_value);
+        result = lisp_eval(env, parsed_value);
 
         // p!
         if(result && !is_nil(result)) {

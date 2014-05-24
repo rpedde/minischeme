@@ -33,7 +33,7 @@ static lisp_value_t *s_is_type(lisp_value_t *v, lisp_type_t t) {
     return lisp_create_bool(0);
 }
 
-lisp_value_t *nullp(lisp_value_t *v) {
+lisp_value_t *nullp(lisp_value_t *env, lisp_value_t *v) {
     if((v->type == l_pair) &&
        (L_CAR(v) == NULL) &&
        (L_CDR(v) == NULL))
@@ -41,25 +41,25 @@ lisp_value_t *nullp(lisp_value_t *v) {
     return lisp_create_bool(0);
 }
 
-lisp_value_t *symbolp(lisp_value_t *v) {
+lisp_value_t *symbolp(lisp_value_t *env, lisp_value_t *v) {
     return s_is_type(v, l_sym);
 }
 
-lisp_value_t *atomp(lisp_value_t *v) {
+lisp_value_t *atomp(lisp_value_t *env, lisp_value_t *v) {
     if(v->type != l_pair)
         return lisp_create_bool(1);
     return lisp_create_bool(0);
 }
 
-lisp_value_t *consp(lisp_value_t *v) {
+lisp_value_t *consp(lisp_value_t *env, lisp_value_t *v) {
     return s_is_type(v, l_pair);
 }
 
-lisp_value_t *listp(lisp_value_t *v) {
+lisp_value_t *listp(lisp_value_t *env, lisp_value_t *v) {
     if((v->type == l_pair) &&
        (L_CAR(v) == NULL) &&
        (L_CDR(v) == NULL))
         return lisp_create_bool(1);
-    return consp(v);
+    return consp(env, v);
 }
 

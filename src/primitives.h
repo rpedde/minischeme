@@ -62,8 +62,9 @@ extern void lisp_dump_value(int fd, lisp_value_t *value, int level);
 /**
  * actual language items
  */
-extern lisp_value_t *lisp_eval(lisp_value_t *v);
-
+extern lisp_value_t *lisp_eval(lisp_value_t *env, lisp_value_t *v);
+extern lisp_value_t *lisp_map(lisp_value_t *env, lisp_value_t *fn, lisp_value_t *v);
+extern lisp_value_t *lisp_apply(lisp_value_t *env, lisp_value_t *fn, lisp_value_t *v);
 
 /**
  * runtime asserts
@@ -73,7 +74,7 @@ extern lisp_value_t *lisp_eval(lisp_value_t *v);
 /**
  * environment stuff
  */
-lisp_value_t *null_environment(lisp_value_t *v);
-lisp_value_t *scheme_report_environment(lisp_value_t *v);
+lisp_value_t *null_environment(lisp_value_t *env, lisp_value_t *v);
+lisp_value_t *scheme_report_environment(lisp_value_t *env, lisp_value_t *v);
 
 #endif /* __PRIMITIVES_H__ */

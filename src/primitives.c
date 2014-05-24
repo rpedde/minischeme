@@ -40,7 +40,7 @@ typedef struct hash_node_t {
 
 typedef struct environment_list_t {
     char *name;
-    lisp_value_t *(*fn)(lisp_value_t *);
+    lisp_value_t *(*fn)(lisp_value_t *, lisp_value_t *);
 } environment_list_t;
 
 static environment_list_t s_r5_list[] = {
@@ -243,7 +243,7 @@ lisp_value_t *lisp_create_bool(int value) {
 /**
  * typechecked wrapper around lisp_create_type for functions
  */
-lisp_value_t *lisp_create_fn(lisp_value_t *(*value)(lisp_value_t*)) {
+lisp_value_t *lisp_create_fn(lisp_value_t *(*value)(lisp_value_t*, lisp_value_t*)) {
     return lisp_create_type((void*)&value, l_fn);
 }
 
@@ -296,7 +296,7 @@ void lisp_dump_value(int fd, lisp_value_t *v, int level) {
 /**
  * evaluate a lisp value
  */
-lisp_value_t *lisp_eval(lisp_value_t *v) {
+lisp_value_t *lisp_eval(lisp_value_t *env, lisp_value_t *v) {
     if(v->type != l_pair) {  // atom?
         return v;
     }
@@ -306,24 +306,62 @@ lisp_value_t *lisp_eval(lisp_value_t *v) {
 }
 
 /**
+ * map a function onto a list, returning the
+ * resulting list
+ */
+lisp_value_t *lisp_map(lisp_value_t *env, lisp_value_t *fn, lisp_value_t *v) {
+    lisp_value_t *vptr = v;
+    lisp_value_t *result = lisp_create_pair(NULL, NULL);
+    lisp_value_t *rptr = result;
+
+    rt_assert(fn->type == l_fn, 'map with non-function');
+    rt_assert(v->type == l_pair, 'map to non-list');
+
+    while(vptr) {
+        L_CAR(rptr) = L_FN(fn)(L_CAR(vptr));
+        vptr=L_CDR(vptr);
+        if(vptr) {
+            L_CDR(rptr) = lisp_create_pair(NULL, NULL);
+            rptr = L_CDR(rptr);
+        }
+    }
+
+    return result;
+}
+
+
+/**
+ * execute a lisp function with the passed arg list
+ */
+lisp_value_t *lisp_apply(lisp_value_t *env, lisp_value_t *fn, lisp_value_t *v) {
+    rt_assert(fn->type == l_fn, 'apply with non-function');
+    rt_assert(v->type == l_pair, 'apply to non-list');
+
+    /* here we would check arity, and do arg fixups
+     * (&rest, etc) */
+
+    return L_FN(fn)(v);
+}
+
+/**
  * hard to get to the rest of the functions without
  * having primitive access to environments, so...
  */
-lisp_value_t *null_environment(lisp_value_t *v) {
-    lisp_value_t *env = lisp_create_hash();
-    return env;
+lisp_value_t *null_environment(lisp_value_t *env, lisp_value_t *v) {
+    lisp_value_t *newenv = lisp_create_hash();
+    return newenv;
 }
 
-lisp_value_t *scheme_report_environment(lisp_value_t *v) {
+lisp_value_t *scheme_report_environment(lisp_value_t *env, lisp_value_t *v) {
     environment_list_t *current = s_r5_list;
-    lisp_value_t *env = null_environment(v);
+    lisp_value_t *newenv = null_environment(env, v);
 
     while(current && current->name) {
-        c_hash_insert(env, lisp_create_string(current->name),
+        c_hash_insert(newenv, lisp_create_string(current->name),
                       lisp_create_fn(current->fn));
         current++;
     }
 
-    return env;
+    return newenv;
 }
 
