@@ -22,7 +22,7 @@
 #define __LISP_TYPES_H__
 
 typedef enum lisp_type_t { l_int, l_float, l_bool, l_sym, l_str,
-			   l_pair, l_hash, l_null, l_fn } lisp_type_t;
+                           l_pair, l_hash, l_null, l_fn } lisp_type_t;
 
 typedef struct lv_t lv_t;
 
@@ -73,7 +73,7 @@ typedef struct lisp_null_t {
 } lisp_null_t;
 
 typedef struct lisp_fn_t {
-    lv_t *(*fn)(lv_t *);
+    lisp_method_t fn;
 } lisp_fn_t;
 
 typedef struct lv_t {
