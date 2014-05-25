@@ -66,6 +66,9 @@ void repl(int level) {
             break;
         }
 
+        if(!*cmd)
+            continue;
+
         if(setjmp(jb) == 0) {
             parsed_value = lisp_parse_string(cmd);
         } else {
