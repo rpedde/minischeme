@@ -91,14 +91,25 @@ static int s_hash_cmp(const void *a, const void *b) {
     return 0;
 }
 
+static int s_hash_item(lv_t *item) {
+    if(item->type == l_str)
+	return murmurhash2(L_STR(item), strlen(L_STR(item)), 0);
+    if(item->type == l_sym)
+	return murmurhash2(L_SYM(item), strlen(L_SYM(item)), 0);
+
+    rt_assert(0, "unhashable data type");
+}
+
 lv_t *c_hash_fetch(lv_t *hash, lv_t *key) {
     hash_node_t node_key;
     void *result;
 
     rt_assert(hash->type == l_hash, "hash operation on non-hash");
-    rt_assert(key->type == l_str, "invalid hash key type");
+    rt_assert(key->type == l_str || key->type == l_sym,
+              "invalid hash key type");
 
-    node_key.key = murmurhash2(L_STR(key), strlen(L_STR(key)), 0);
+    node_key.key = s_hash_item(key);
+
     result = tfind(&node_key, &L_HASH(hash), s_hash_cmp);
     if(!result)
         return NULL;
@@ -114,10 +125,11 @@ int c_hash_insert(lv_t *hash,
     void *result;
 
     rt_assert(hash->type == l_hash, "hash operation on non-hash");
-    rt_assert(key->type == l_str, "invalid hash key type");
+    rt_assert(key->type == l_str || key->type == l_sym,
+              "invalid hash key type");
 
     pnew=safe_malloc(sizeof(hash_node_t));
-    pnew->key = murmurhash2(L_STR(key), strlen(L_STR(key)), 0);
+    pnew->key = s_hash_item(key);
     pnew->value = value;
 
     result = tsearch(pnew, &L_HASH(hash), s_hash_cmp);
@@ -129,9 +141,10 @@ int c_hash_delete(lv_t *hash, lv_t *key) {
     void *result;
 
     rt_assert(hash->type == l_hash, "hash operation on non-hash");
-    rt_assert(key->type == l_str, "invalid hash key type");
+    rt_assert(key->type == l_str || key->type == l_sym,
+              "invalid hash key type");
 
-    node_key.key = murmurhash2(L_STR(key), strlen(L_STR(key)), 0);
+    node_key.key = s_hash_item(key);
     result = tdelete(&node_key, &L_HASH(hash), s_hash_cmp);
     return(result != NULL);
 }
@@ -194,7 +207,7 @@ lv_t *lisp_create_type(void *value, lisp_type_t type) {
         L_STR(result) = safe_strdup((char*)value);
         break;
     case l_fn:
-        L_FN(result) = (lv_t *(*)(lv_t *))value;
+        L_FN(result) = (lisp_method_t)value;
         break;
     default:
         assert(0);
@@ -244,7 +257,7 @@ lv_t *lisp_create_bool(int value) {
  * typechecked wrapper around lisp_create_type for functions
  */
 lv_t *lisp_create_fn(lisp_method_t value) {
-    return lisp_create_type((void*)&value, l_fn);
+    return lisp_create_type(value, l_fn);
 }
 
 /**
@@ -297,12 +310,59 @@ void lisp_dump_value(int fd, lv_t *v, int level) {
  * evaluate a lisp value
  */
 lv_t *lisp_eval(lv_t *env, lv_t *v) {
+    lv_t *fn;
+
     if(v->type != l_pair) {  // atom?
         return v;
     }
 
-    // list?
-    return v;
+    /* the only special form we'll recognize is quote.  ;) */
+    if(v->type == l_pair) {
+	/* test special forms first */
+	if(L_CAR(v)->type == l_sym) {
+            if(strcmp(L_SYM(L_CAR(v)), "quote") == 0)
+		return lisp_quote(env, L_CDR(v));
+	}
+
+	/* test symbols */
+	if(v->type == l_fn)
+            fn = v;
+	else if(L_CAR(v)->type == l_sym) {
+            lv_t *tmp = c_hash_fetch(env, L_CAR(v));
+            rt_assert(tmp, "unknown function");
+            rt_assert(tmp->type == l_fn, "eval a non-function");
+            fn = tmp;
+	}
+
+	/* execute the function */
+	return L_FN(fn)(env, L_CDR(v));
+    }
+
+    assert(0);
+}
+
+/**
+ * return a quoted expression
+ */
+lv_t *lisp_quote(lv_t *env, lv_t *v) {
+    rt_assert(c_list_length(v) == 1, "quote arity");
+    return L_CAR(v);
+}
+
+/**
+ * find the length of a list
+ */
+int c_list_length(lv_t *v) {
+    lv_t *current = v;
+    int count = 0;
+
+    assert(v->type == l_pair);
+    while(current) {
+        count++;
+        current = L_CDR(current);
+    }
+
+    return count;
 }
 
 /**
@@ -318,7 +378,7 @@ lv_t *lisp_map(lv_t *env, lv_t *fn, lv_t *v) {
     rt_assert(v->type == l_pair, 'map to non-list');
 
     while(vptr) {
-        L_CAR(rptr) = L_FN(fn)(L_CAR(vptr));
+        L_CAR(rptr) = L_FN(fn)(env, L_CAR(vptr));
         vptr=L_CDR(vptr);
         if(vptr) {
             L_CDR(rptr) = lisp_create_pair(NULL, NULL);
@@ -340,7 +400,7 @@ lv_t *lisp_apply(lv_t *env, lv_t *fn, lv_t *v) {
     /* here we would check arity, and do arg fixups
      * (&rest, etc) */
 
-    return L_FN(fn)(v);
+    return L_FN(fn)(env, v);
 }
 
 /**

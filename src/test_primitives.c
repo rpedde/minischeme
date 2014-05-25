@@ -4,6 +4,7 @@
 
 #include "lisp-types.h"
 #include "primitives.h"
+#include "builtins.h"
 #include "selfcheck.h"
 
 int test_hash_functions(void *scaffold) {
@@ -41,9 +42,26 @@ int test_hash_functions(void *scaffold) {
 }
 
 int test_environment(void *scaffold) {
+    lv_t *fn;
+    lv_t *fn2;
+
     /* get an env */
     lv_t *env = scheme_report_environment(NULL, NULL);
 
-    /* make sure it's not empty */
+    /* make sure it's generally working */
+    fn = c_hash_fetch(env, lisp_create_string("lsdjfljsdflsj"));
+    assert(!fn);
+
+    fn = c_hash_fetch(env, lisp_create_string("null?"));
+    assert(fn);
+
+    fn2 = c_hash_fetch(env, lisp_create_symbol("null?"));
+    assert(fn2);
+
+    assert(fn == fn2);
+
+    /* make sure it actually points to the right thing */
+    assert(L_FN(fn) == nullp);
+
     return 1;
 }
