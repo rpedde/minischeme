@@ -350,8 +350,10 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
             fn = tmp;
 	}
 
+        lv_t *eval_fn = lisp_create_fn(lisp_eval);
+
 	/* execute the function */
-	return L_FN(fn)(env, L_CDR(v));
+	return L_FN(fn)(env, lisp_map(env, eval_fn, L_CDR(v)));
     }
 
     assert(0);
