@@ -22,6 +22,8 @@
 #define __PRIMITIVES_H__
 
 #include <stdint.h>
+#include <setjmp.h>
+
 #include "lisp-types.h"
 
 /**
@@ -73,7 +75,14 @@ extern lv_t *lisp_quote(lv_t *env, lv_t *v);
 /**
  * runtime asserts
  */
-#define rt_assert(a, msg) assert((a))
+#define rt_assert(a, type, msg) { \
+    if(!(a)) { \
+        c_rt_assert(type, msg); \
+    } \
+}
+
+extern void c_rt_assert(lisp_exception_t etype, char *msg);
+extern void c_set_top_context(jmp_buf *pjb);
 
 /**
  * environment stuff

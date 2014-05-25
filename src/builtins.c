@@ -35,7 +35,7 @@ static lv_t *s_is_type(lv_t *v, lisp_type_t t) {
 
 lv_t *nullp(lv_t *env, lv_t *v) {
     assert(v && v->type == l_pair);
-    rt_assert(c_list_length(v) == 1, "wrong arity");
+    rt_assert(c_list_length(v) == 1, le_arity, "wrong arity");
     lv_t *a0 = L_CAR(v);
 
     return s_is_type(a0, l_null);
@@ -43,7 +43,7 @@ lv_t *nullp(lv_t *env, lv_t *v) {
 
 lv_t *symbolp(lv_t *env, lv_t *v) {
     assert(v && v->type == l_pair);
-    rt_assert(c_list_length(v) == 1, "wrong arity");
+    rt_assert(c_list_length(v) == 1, le_arity, "wrong arity");
     lv_t *a0 = L_CAR(v);
 
     return s_is_type(a0, l_sym);
@@ -51,7 +51,7 @@ lv_t *symbolp(lv_t *env, lv_t *v) {
 
 lv_t *atomp(lv_t *env, lv_t *v) {
     assert(v && v->type == l_pair);
-    rt_assert(c_list_length(v) == 1, "wrong arity");
+    rt_assert(c_list_length(v) == 1, le_arity, "wrong arity");
     lv_t *a0 = L_CAR(v);
 
     if(a0->type != l_pair)
@@ -61,7 +61,7 @@ lv_t *atomp(lv_t *env, lv_t *v) {
 
 lv_t *consp(lv_t *env, lv_t *v) {
     assert(v && v->type == l_pair);
-    rt_assert(c_list_length(v) == 1, "wrong arity");
+    rt_assert(c_list_length(v) == 1, le_arity, "wrong arity");
     lv_t *a0 = L_CAR(v);
 
     return s_is_type(a0, l_pair);
@@ -69,7 +69,7 @@ lv_t *consp(lv_t *env, lv_t *v) {
 
 lv_t *listp(lv_t *env, lv_t *v) {
     assert(v && v->type == l_pair);
-    rt_assert(c_list_length(v) == 1, "wrong arity");
+    rt_assert(c_list_length(v) == 1, le_arity, "wrong arity");
     lv_t *a0 = L_CAR(v);
 
     if((a0->type == l_pair) || (a0->type == l_null))

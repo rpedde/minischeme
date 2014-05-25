@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <unistd.h>
+#include <setjmp.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -31,6 +32,8 @@
 static int is_nil(lv_t *v) {
     return(v && v->type == l_null);
 }
+
+static jmp_buf jb;
 
 void usage(char *a0) {
     printf("Usage: %s [options]\n\n", a0);
@@ -49,6 +52,8 @@ void repl(int level) {
     lv_t *result;
     lv_t *env = scheme_report_environment(NULL, NULL);
 
+    c_set_top_context(&jb);
+
     while(!quit) {
         snprintf(prompt, sizeof(prompt), "%d:%d> ", level, line);
 
@@ -61,7 +66,12 @@ void repl(int level) {
             break;
         }
 
-        parsed_value = lisp_parse_string(cmd);
+        if(setjmp(jb) == 0) {
+            parsed_value = lisp_parse_string(cmd);
+        } else {
+            parsed_value = NULL;
+        }
+
         if(!parsed_value)
             continue;
 

@@ -25,6 +25,7 @@
 #include <search.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <setjmp.h>
 
 #include <gc.h>
 
@@ -43,6 +44,8 @@ typedef struct environment_list_t {
     lv_t *(*fn)(lv_t *, lv_t *);
 } environment_list_t;
 
+static jmp_buf *assert_handler = NULL;
+
 static environment_list_t s_r5_list[] = {
     { "null?", nullp },
     { "symbol?", symbolp },
@@ -53,6 +56,19 @@ static environment_list_t s_r5_list[] = {
     { "scheme-report-environment", scheme_report_environment },
     { NULL, NULL }
 };
+
+void c_set_top_context(jmp_buf *pjb) {
+    assert_handler = pjb;
+}
+
+void c_rt_assert(lisp_exception_t etype, char *msg) {
+    fprintf(stderr, "Error: %s\n", msg);
+    if(assert_handler) {
+        longjmp(*assert_handler, (int)etype);
+    } else {
+        exit((int)etype);
+    }
+}
 
 void *safe_malloc(size_t size) {
     void *result = GC_malloc(size);
@@ -97,16 +113,16 @@ static int s_hash_item(lv_t *item) {
     if(item->type == l_sym)
 	return murmurhash2(L_SYM(item), strlen(L_SYM(item)), 0);
 
-    rt_assert(0, "unhashable data type");
+    rt_assert(0, le_type, "unhashable data type");
 }
 
 lv_t *c_hash_fetch(lv_t *hash, lv_t *key) {
     hash_node_t node_key;
     void *result;
 
-    rt_assert(hash->type == l_hash, "hash operation on non-hash");
+    rt_assert(hash->type == l_hash, le_type, "hash operation on non-hash");
     rt_assert(key->type == l_str || key->type == l_sym,
-              "invalid hash key type");
+              le_type, "invalid hash key type");
 
     node_key.key = s_hash_item(key);
 
@@ -124,9 +140,9 @@ int c_hash_insert(lv_t *hash,
     hash_node_t *pnew;
     void *result;
 
-    rt_assert(hash->type == l_hash, "hash operation on non-hash");
+    rt_assert(hash->type == l_hash, le_type, "hash operation on non-hash");
     rt_assert(key->type == l_str || key->type == l_sym,
-              "invalid hash key type");
+              le_type, "invalid hash key type");
 
     pnew=safe_malloc(sizeof(hash_node_t));
     pnew->key = s_hash_item(key);
@@ -140,9 +156,9 @@ int c_hash_delete(lv_t *hash, lv_t *key) {
     hash_node_t node_key;
     void *result;
 
-    rt_assert(hash->type == l_hash, "hash operation on non-hash");
+    rt_assert(hash->type == l_hash, le_type, "hash operation on non-hash");
     rt_assert(key->type == l_str || key->type == l_sym,
-              "invalid hash key type");
+              le_type, "invalid hash key type");
 
     node_key.key = s_hash_item(key);
     result = tdelete(&node_key, &L_HASH(hash), s_hash_cmp);
@@ -329,8 +345,8 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
             fn = v;
 	else if(L_CAR(v)->type == l_sym) {
             lv_t *tmp = c_hash_fetch(env, L_CAR(v));
-            rt_assert(tmp, "unknown function");
-            rt_assert(tmp->type == l_fn, "eval a non-function");
+            rt_assert(tmp, le_lookup, "unknown function");
+            rt_assert(tmp->type == l_fn, le_type, "eval a non-function");
             fn = tmp;
 	}
 
@@ -345,7 +361,7 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
  * return a quoted expression
  */
 lv_t *lisp_quote(lv_t *env, lv_t *v) {
-    rt_assert(c_list_length(v) == 1, "quote arity");
+    rt_assert(c_list_length(v) == 1, le_arity, "quote arity");
     return L_CAR(v);
 }
 
@@ -374,8 +390,8 @@ lv_t *lisp_map(lv_t *env, lv_t *fn, lv_t *v) {
     lv_t *result = lisp_create_pair(NULL, NULL);
     lv_t *rptr = result;
 
-    rt_assert(fn->type == l_fn, 'map with non-function');
-    rt_assert(v->type == l_pair, 'map to non-list');
+    rt_assert(fn->type == l_fn, le_type, "map with non-function");
+    rt_assert(v->type == l_pair, le_type, "map to non-list");
 
     while(vptr) {
         L_CAR(rptr) = L_FN(fn)(env, L_CAR(vptr));
@@ -394,8 +410,8 @@ lv_t *lisp_map(lv_t *env, lv_t *fn, lv_t *v) {
  * execute a lisp function with the passed arg list
  */
 lv_t *lisp_apply(lv_t *env, lv_t *fn, lv_t *v) {
-    rt_assert(fn->type == l_fn, 'apply with non-function');
-    rt_assert(v->type == l_pair, 'apply to non-list');
+    rt_assert(fn->type == l_fn, le_type, "apply with non-function");
+    rt_assert(v->type == l_pair, le_type, "apply to non-list");
 
     /* here we would check arity, and do arg fixups
      * (&rest, etc) */

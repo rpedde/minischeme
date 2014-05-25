@@ -21,8 +21,24 @@
 #ifndef __LISP_TYPES_H__
 #define __LISP_TYPES_H__
 
-typedef enum lisp_type_t { l_int, l_float, l_bool, l_sym, l_str,
-                           l_pair, l_hash, l_null, l_fn } lisp_type_t;
+typedef enum lisp_type_t {
+    l_int,
+    l_float,
+    l_bool,
+    l_sym,
+    l_str,
+    l_pair,
+    l_hash,
+    l_null,
+    l_fn
+} lisp_type_t;
+
+typedef enum lisp_exception_t {
+    le_arity = 1,      /* wrong arity for function */
+    le_type,           /* wrong type for operation */
+    le_lookup          /* could not bind -- not in environment */
+} lisp_exception_t;
+
 
 typedef struct lv_t lv_t;
 
