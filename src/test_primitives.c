@@ -7,10 +7,10 @@
 #include "selfcheck.h"
 
 int test_hash_functions(void *scaffold) {
-    lisp_value_t *hash = lisp_create_hash();
-    lisp_value_t *key1 = lisp_create_string("key1");
-    lisp_value_t *key2 = lisp_create_string("key2");
-    lisp_value_t *result;
+    lv_t *hash = lisp_create_hash();
+    lv_t *key1 = lisp_create_string("key1");
+    lv_t *key2 = lisp_create_string("key2");
+    lv_t *result;
 
     /* insert key1 */
     assert(c_hash_insert(hash, key1, key1));
@@ -42,7 +42,7 @@ int test_hash_functions(void *scaffold) {
 
 int test_environment(void *scaffold) {
     /* get an env */
-    lisp_value_t *env = scheme_report_environment(NULL, NULL);
+    lv_t *env = scheme_report_environment(NULL, NULL);
 
     /* make sure it's not empty */
     return 1;

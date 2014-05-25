@@ -24,9 +24,9 @@
 typedef enum lisp_type_t { l_int, l_float, l_bool, l_sym, l_str,
 			   l_pair, l_hash, l_null, l_fn } lisp_type_t;
 
-typedef struct lisp_value_t lisp_value_t;
+typedef struct lv_t lv_t;
 
-typedef lisp_value_t *(*lisp_method_t)(lisp_value_t *, lisp_value_t*);
+typedef lv_t *(*lisp_method_t)(lv_t *, lv_t*);
 
 
 #define L_INT(what)     what->value.i.value
@@ -60,8 +60,8 @@ typedef struct lisp_string_t {
 } lisp_string_t;
 
 typedef struct lisp_pair_t {
-    lisp_value_t *car;
-    lisp_value_t *cdr;
+    lv_t *car;
+    lv_t *cdr;
 } lisp_pair_t;
 
 typedef struct lisp_hash_t {
@@ -73,10 +73,10 @@ typedef struct lisp_null_t {
 } lisp_null_t;
 
 typedef struct lisp_fn_t {
-    lisp_value_t *(*fn)(lisp_value_t *);
+    lv_t *(*fn)(lv_t *);
 } lisp_fn_t;
 
-typedef struct lisp_value_t {
+typedef struct lv_t {
     lisp_type_t type;
     union {
         lisp_int_t i;
@@ -88,13 +88,13 @@ typedef struct lisp_value_t {
         lisp_hash_t h;
         lisp_fn_t l;
     } value;
-} lisp_value_t;
+} lv_t;
 
 /** given a native c type, box it into a lisp type struct */
-extern lisp_value_t *lisp_create_type(void *value, lisp_type_t type);
+extern lv_t *lisp_create_type(void *value, lisp_type_t type);
 
 /** given a string, parse it and return the parsed lisp_value */
-extern lisp_value_t *lisp_parse_string(char *string);
+extern lv_t *lisp_parse_string(char *string);
 
 /** helper for reading parser input from strings */
 extern int parser_read_input(char *buffer, int *read, int max);

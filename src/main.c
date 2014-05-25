@@ -28,7 +28,7 @@
 #include "lisp-types.h"
 #include "primitives.h"
 
-static int is_nil(lisp_value_t *v) {
+static int is_nil(lv_t *v) {
     return(v && v->type == l_null);
 }
 
@@ -45,19 +45,19 @@ void repl(int level) {
     char *cmd;
     int quit = 0;
     int line = 1;
-    lisp_value_t *parsed_value;
-    lisp_value_t *result;
-    lisp_value_t *env = scheme_report_environment(NULL, NULL);
+    lv_t *parsed_value;
+    lv_t *result;
+    lv_t *env = scheme_report_environment(NULL, NULL);
 
     while(!quit) {
         snprintf(prompt, sizeof(prompt), "%d:%d> ", level, line);
 
         // r!
         cmd = readline(prompt);
-        
+
         if(!cmd) {
             printf("\n");
-            quit = 1; 
+            quit = 1;
             break;
         }
 

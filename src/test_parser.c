@@ -7,7 +7,7 @@
 #include "selfcheck.h"
 
 int test_string_parsing(void *scaffold) {
-    lisp_value_t *result;
+    lv_t *result;
 
     result = lisp_parse_string("\"this is a string\"");
 
@@ -17,7 +17,7 @@ int test_string_parsing(void *scaffold) {
 }
 
 int test_int_parsing(void *scaffold) {
-    lisp_value_t *result;
+    lv_t *result;
 
     result = lisp_parse_string("7");
 
@@ -27,7 +27,7 @@ int test_int_parsing(void *scaffold) {
 }
 
 int test_float_parsing(void *scaffold) {
-    lisp_value_t *result;
+    lv_t *result;
 
     result = lisp_parse_string("1.");
 
@@ -42,7 +42,7 @@ int test_float_parsing(void *scaffold) {
 }
 
 int test_bool_parsing(void *scaffold) {
-  lisp_value_t *result;
+  lv_t *result;
 
   result = lisp_parse_string("#t");
 
@@ -56,7 +56,7 @@ int test_bool_parsing(void *scaffold) {
 }
 
 int test_sym_parsing(void *scaffold) {
-    lisp_value_t *result;
+    lv_t *result;
 
     result = lisp_parse_string("aks...");
     assert(result->type == l_sym);
@@ -65,7 +65,7 @@ int test_sym_parsing(void *scaffold) {
 }
 
 int test_list_parsing(void *scaffold) {
-    lisp_value_t *result;
+    lv_t *result;
     result = lisp_parse_string("()");
     assert(result->type == l_null);
 

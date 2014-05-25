@@ -36,7 +36,7 @@ extern void yyflush(void);
 
 static char *lisp_parse_input;
 static int lisp_parse_offset;
-static lisp_value_t *result;
+static lv_t *result;
 
 
 %}
@@ -45,7 +45,7 @@ static lisp_value_t *result;
     int64_t i_value;
     double f_value;
     char *s_value;
-    lisp_value_t *lisp_value;
+    lv_t *lisp_value;
 };
 
 %token <i_value> INTEGER
@@ -97,7 +97,7 @@ int parser_read_input(char *buffer, int *read, int max) {
     return 0;
 }
 
-lisp_value_t *lisp_parse_string(char *string) {
+lv_t *lisp_parse_string(char *string) {
     lisp_parse_offset = 0;
     lisp_parse_input = string;
 

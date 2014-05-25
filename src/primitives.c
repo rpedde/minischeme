@@ -35,12 +35,12 @@
 
 typedef struct hash_node_t {
     uint32_t key;
-    lisp_value_t *value;
+    lv_t *value;
 } hash_node_t;
 
 typedef struct environment_list_t {
     char *name;
-    lisp_value_t *(*fn)(lisp_value_t *, lisp_value_t *);
+    lv_t *(*fn)(lv_t *, lv_t *);
 } environment_list_t;
 
 static environment_list_t s_r5_list[] = {
@@ -75,7 +75,7 @@ static void s_node_free(void *nodep) {
 }
 
 static void s_hash_finalizer(void *v_obj, void *v_env) {
-    lisp_value_t *obj = (lisp_value_t*)v_obj;
+    lv_t *obj = (lv_t*)v_obj;
 
     tdestroy(L_HASH(obj), s_node_free);
 }
@@ -91,7 +91,7 @@ static int s_hash_cmp(const void *a, const void *b) {
     return 0;
 }
 
-lisp_value_t *c_hash_fetch(lisp_value_t *hash, lisp_value_t *key) {
+lv_t *c_hash_fetch(lv_t *hash, lv_t *key) {
     hash_node_t node_key;
     void *result;
 
@@ -106,9 +106,9 @@ lisp_value_t *c_hash_fetch(lisp_value_t *hash, lisp_value_t *key) {
     return (*(hash_node_t **)result)->value;
 }
 
-int c_hash_insert(lisp_value_t *hash,
-                  lisp_value_t *key,
-                  lisp_value_t *value) {
+int c_hash_insert(lv_t *hash,
+                  lv_t *key,
+                  lv_t *value) {
 
     hash_node_t *pnew;
     void *result;
@@ -124,7 +124,7 @@ int c_hash_insert(lisp_value_t *hash,
     return(result != NULL);
 }
 
-int c_hash_delete(lisp_value_t *hash, lisp_value_t *key) {
+int c_hash_delete(lv_t *hash, lv_t *key) {
     hash_node_t node_key;
     void *result;
 
@@ -136,16 +136,16 @@ int c_hash_delete(lisp_value_t *hash, lisp_value_t *key) {
     return(result != NULL);
 }
 
-lisp_value_t *lisp_create_null(void) {
-    lisp_value_t *result = safe_malloc(sizeof(lisp_value_t));
+lv_t *lisp_create_null(void) {
+    lv_t *result = safe_malloc(sizeof(lv_t));
     result->type = l_null;
     return result;
 }
 
-lisp_value_t *lisp_create_hash(void) {
-    lisp_value_t *result;
+lv_t *lisp_create_hash(void) {
+    lv_t *result;
 
-    result = safe_malloc(sizeof(lisp_value_t));
+    result = safe_malloc(sizeof(lv_t));
     result->type = l_hash;
     L_HASH(result) = NULL;
 
@@ -154,10 +154,10 @@ lisp_value_t *lisp_create_hash(void) {
     return result;
 }
 
-lisp_value_t *lisp_create_pair(lisp_value_t *car, lisp_value_t *cdr) {
-    lisp_value_t *result;
+lv_t *lisp_create_pair(lv_t *car, lv_t *cdr) {
+    lv_t *result;
 
-    result = safe_malloc(sizeof(lisp_value_t));
+    result = safe_malloc(sizeof(lv_t));
 
     result->type = l_pair;
     L_CAR(result) = car;
@@ -170,10 +170,10 @@ lisp_value_t *lisp_create_pair(lisp_value_t *car, lisp_value_t *cdr) {
     return result;
 }
 
-lisp_value_t *lisp_create_type(void *value, lisp_type_t type) {
-    lisp_value_t *result;
+lv_t *lisp_create_type(void *value, lisp_type_t type) {
+    lv_t *result;
 
-    result = safe_malloc(sizeof(lisp_value_t));
+    result = safe_malloc(sizeof(lv_t));
 
     result->type = type;
 
@@ -194,7 +194,7 @@ lisp_value_t *lisp_create_type(void *value, lisp_type_t type) {
         L_STR(result) = safe_strdup((char*)value);
         break;
     case l_fn:
-        L_FN(result) = (lisp_value_t *(*)(lisp_value_t *))value;
+        L_FN(result) = (lv_t *(*)(lv_t *))value;
         break;
     default:
         assert(0);
@@ -208,49 +208,49 @@ lisp_value_t *lisp_create_type(void *value, lisp_type_t type) {
 /**
  * typechecked wrapper around lisp_create_type for strings
  */
-lisp_value_t *lisp_create_string(char *value) {
+lv_t *lisp_create_string(char *value) {
     return lisp_create_type((void*)value, l_str);
 }
 
 /**
  * typechecked wrapper around lisp_create_type for symbols
  */
-lisp_value_t *lisp_create_symbol(char *value) {
+lv_t *lisp_create_symbol(char *value) {
     return lisp_create_type((void*)value, l_sym);
 }
 
 /**
  * typechecked wrapper around lisp_create_type for floats
  */
-lisp_value_t *lisp_create_float(double value) {
+lv_t *lisp_create_float(double value) {
     return lisp_create_type((void*)&value, l_float);
 }
 
 /**
  * typechecked wrapper around lisp_create_type for ints
  */
-lisp_value_t *lisp_create_int(int64_t value) {
+lv_t *lisp_create_int(int64_t value) {
     return lisp_create_type((void*)&value, l_int);
 }
 
 /**
  * typechecked wrapper around lisp_create_type for bools
  */
-lisp_value_t *lisp_create_bool(int value) {
+lv_t *lisp_create_bool(int value) {
     return lisp_create_type((void*)&value, l_bool);
 }
 
 /**
  * typechecked wrapper around lisp_create_type for functions
  */
-lisp_value_t *lisp_create_fn(lisp_method_t value) {
+lv_t *lisp_create_fn(lisp_method_t value) {
     return lisp_create_type((void*)&value, l_fn);
 }
 
 /**
  * print a value to a fd, in a debug form
  */
-void lisp_dump_value(int fd, lisp_value_t *v, int level) {
+void lisp_dump_value(int fd, lv_t *v, int level) {
     switch(v->type) {
     case l_null:
         dprintf(fd, "()");
@@ -272,7 +272,7 @@ void lisp_dump_value(int fd, lisp_value_t *v, int level) {
         break;
     case l_pair:
         dprintf(fd, "(");
-        lisp_value_t *vp = v;
+        lv_t *vp = v;
         while(vp && L_CAR(vp)) {
             lisp_dump_value(fd, L_CAR(vp), level + 1);
             if(L_CDR(vp) && (L_CDR(vp)->type != l_pair)) {
@@ -296,7 +296,7 @@ void lisp_dump_value(int fd, lisp_value_t *v, int level) {
 /**
  * evaluate a lisp value
  */
-lisp_value_t *lisp_eval(lisp_value_t *env, lisp_value_t *v) {
+lv_t *lisp_eval(lv_t *env, lv_t *v) {
     if(v->type != l_pair) {  // atom?
         return v;
     }
@@ -309,10 +309,10 @@ lisp_value_t *lisp_eval(lisp_value_t *env, lisp_value_t *v) {
  * map a function onto a list, returning the
  * resulting list
  */
-lisp_value_t *lisp_map(lisp_value_t *env, lisp_value_t *fn, lisp_value_t *v) {
-    lisp_value_t *vptr = v;
-    lisp_value_t *result = lisp_create_pair(NULL, NULL);
-    lisp_value_t *rptr = result;
+lv_t *lisp_map(lv_t *env, lv_t *fn, lv_t *v) {
+    lv_t *vptr = v;
+    lv_t *result = lisp_create_pair(NULL, NULL);
+    lv_t *rptr = result;
 
     rt_assert(fn->type == l_fn, 'map with non-function');
     rt_assert(v->type == l_pair, 'map to non-list');
@@ -333,7 +333,7 @@ lisp_value_t *lisp_map(lisp_value_t *env, lisp_value_t *fn, lisp_value_t *v) {
 /**
  * execute a lisp function with the passed arg list
  */
-lisp_value_t *lisp_apply(lisp_value_t *env, lisp_value_t *fn, lisp_value_t *v) {
+lv_t *lisp_apply(lv_t *env, lv_t *fn, lv_t *v) {
     rt_assert(fn->type == l_fn, 'apply with non-function');
     rt_assert(v->type == l_pair, 'apply to non-list');
 
@@ -347,14 +347,14 @@ lisp_value_t *lisp_apply(lisp_value_t *env, lisp_value_t *fn, lisp_value_t *v) {
  * hard to get to the rest of the functions without
  * having primitive access to environments, so...
  */
-lisp_value_t *null_environment(lisp_value_t *env, lisp_value_t *v) {
-    lisp_value_t *newenv = lisp_create_hash();
+lv_t *null_environment(lv_t *env, lv_t *v) {
+    lv_t *newenv = lisp_create_hash();
     return newenv;
 }
 
-lisp_value_t *scheme_report_environment(lisp_value_t *env, lisp_value_t *v) {
+lv_t *scheme_report_environment(lv_t *env, lv_t *v) {
     environment_list_t *current = s_r5_list;
-    lisp_value_t *newenv = null_environment(env, v);
+    lv_t *newenv = null_environment(env, v);
 
     while(current && current->name) {
         c_hash_insert(newenv, lisp_create_string(current->name),
