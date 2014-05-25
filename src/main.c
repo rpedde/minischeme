@@ -62,6 +62,8 @@ void repl(int level) {
         }
 
         parsed_value = lisp_parse_string(cmd);
+        if(!parsed_value)
+            continue;
 
         // e!
         result = lisp_eval(env, parsed_value);
