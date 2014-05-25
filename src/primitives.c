@@ -97,7 +97,7 @@ lisp_value_t *c_hash_fetch(lisp_value_t *hash, lisp_value_t *key) {
 
     rt_assert(hash->type == l_hash, "hash operation on non-hash");
     rt_assert(key->type == l_str, "invalid hash key type");
-    
+
     node_key.key = murmurhash2(L_STR(key), strlen(L_STR(key)), 0);
     result = tfind(&node_key, &L_HASH(hash), s_hash_cmp);
     if(!result)
@@ -106,10 +106,10 @@ lisp_value_t *c_hash_fetch(lisp_value_t *hash, lisp_value_t *key) {
     return (*(hash_node_t **)result)->value;
 }
 
-int c_hash_insert(lisp_value_t *hash, 
-                  lisp_value_t *key, 
+int c_hash_insert(lisp_value_t *hash,
+                  lisp_value_t *key,
                   lisp_value_t *value) {
-    
+
     hash_node_t *pnew;
     void *result;
 
@@ -130,7 +130,7 @@ int c_hash_delete(lisp_value_t *hash, lisp_value_t *key) {
 
     rt_assert(hash->type == l_hash, "hash operation on non-hash");
     rt_assert(key->type == l_str, "invalid hash key type");
-    
+
     node_key.key = murmurhash2(L_STR(key), strlen(L_STR(key)), 0);
     result = tdelete(&node_key, &L_HASH(hash), s_hash_cmp);
     return(result != NULL);
@@ -176,7 +176,7 @@ lisp_value_t *lisp_create_type(void *value, lisp_type_t type) {
     result = safe_malloc(sizeof(lisp_value_t));
 
     result->type = type;
-    
+
     switch(type) {
     case l_int:
         L_INT(result) = *((int64_t*)value);
@@ -206,7 +206,7 @@ lisp_value_t *lisp_create_type(void *value, lisp_type_t type) {
 }
 
 /**
- * typechecked wrapper around lisp_create_type for strings 
+ * typechecked wrapper around lisp_create_type for strings
  */
 lisp_value_t *lisp_create_string(char *value) {
     return lisp_create_type((void*)value, l_str);
@@ -243,7 +243,7 @@ lisp_value_t *lisp_create_bool(int value) {
 /**
  * typechecked wrapper around lisp_create_type for functions
  */
-lisp_value_t *lisp_create_fn(lisp_value_t *(*value)(lisp_value_t*, lisp_value_t*)) {
+lisp_value_t *lisp_create_fn(lisp_method_t value) {
     return lisp_create_type((void*)&value, l_fn);
 }
 
@@ -286,7 +286,7 @@ void lisp_dump_value(int fd, lisp_value_t *v, int level) {
         }
         dprintf(fd, ")");
         break;
-        
+
     default:
         // missing a type check.
         assert(0);
@@ -364,4 +364,3 @@ lisp_value_t *scheme_report_environment(lisp_value_t *env, lisp_value_t *v) {
 
     return newenv;
 }
-
