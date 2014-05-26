@@ -53,6 +53,8 @@ static environment_list_t s_r5_list[] = {
     { "atom?", atomp },
     { "cons?", consp },
     { "list?", listp },
+    { "pair?", pairp },
+    { "equal?", equalp },
     { "+", plus },
     { "null-environment", null_environment },
     { "scheme-report-environment", scheme_report_environment },

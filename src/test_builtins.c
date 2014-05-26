@@ -83,3 +83,36 @@ int test_plus(void *scaffold) {
 
     return 1;
 }
+
+int test_equal(void *scaffold) {
+    lv_t *r;
+    lv_t *env = scheme_report_environment(NULL, NULL);
+    char *ev;
+    int idx;
+
+    char *passing[] = {
+        "(equal? 1 1)",
+        "(equal? (quote #t) (quote #t))",
+        "(equal? equal? equal?)",
+        "(equal? (quote #t) (equal? 1 1))",
+        NULL
+    };
+
+    char *failing[] = {
+        "(equal? 1 2)",
+        "(equal? equal? null?)",
+        "(equal? 1.0 1)",
+        "(equal? (quote #t) (equal? 1 2))",
+        NULL
+    };
+
+    idx = 0;
+    while(passing[idx]) {
+        r = lisp_eval(env, lisp_parse_string(passing[idx]));
+        assert(r->type == l_bool);
+        assert(L_BOOL(r) == 1);
+        idx++;
+    }
+
+    return 1;
+}

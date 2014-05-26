@@ -52,6 +52,7 @@ typedef lv_t *(*lisp_method_t)(lv_t *, lv_t*);
 #define L_STR(what)     what->value.c.value
 #define L_CDR(what)     what->value.p.cdr
 #define L_CAR(what)     what->value.p.car
+#define L_CADR(what)    L_CAR(L_CDR(what))
 #define L_HASH(what)    what->value.h.value
 #define L_FN(what)      what->value.l.fn
 
