@@ -9,7 +9,9 @@ bin_PROGRAMS = minischeme
 TESTS = selfcheck
 check_PROGRAMS = selfcheck
 
-libminischeme_la_SOURCES = parser.y tokenizer.l primitives.h primitives.c murmurhash.h murmurhash.c builtins.h builtins.c
+libminischeme_la_SOURCES = parser.y tokenizer.l primitives.h primitives.c \
+	murmurhash.h murmurhash.c builtins.h builtins.c
+
 libminischeme_la_LIBADD = -lgc
 
 minischeme_SOURCES = main.c
@@ -19,19 +21,9 @@ selfcheck_SOURCES = selfcheck.c
 selfcheck_LDADD = libminischeme.la
 nodist_selfcheck_SOURCES = test-definitions.h
 
-EXTRA_DIST = gentests.sh test_parser.c
+EXTRA_DIST = gentests.sh test_parser.c test_builtins.c test_primitives.c
 
 # build rule for test-definitions.h
 .FORCE:
 test-definitions.h: .FORCE
 	./gentests.sh
-
-
-
-
-
-
-
-
-
-

@@ -45,6 +45,7 @@ typedef struct environment_list_t {
 } environment_list_t;
 
 static jmp_buf *assert_handler = NULL;
+static emit_on_error = 1;
 
 static environment_list_t s_r5_list[] = {
     { "null?", nullp },
@@ -52,6 +53,7 @@ static environment_list_t s_r5_list[] = {
     { "atom?", atomp },
     { "cons?", consp },
     { "list?", listp },
+    { "+", plus },
     { "null-environment", null_environment },
     { "scheme-report-environment", scheme_report_environment },
     { NULL, NULL }
@@ -61,8 +63,14 @@ void c_set_top_context(jmp_buf *pjb) {
     assert_handler = pjb;
 }
 
+void c_set_emit_on_error(int v) {
+    emit_on_error = v;
+}
+
 void c_rt_assert(lisp_exception_t etype, char *msg) {
-    fprintf(stderr, "Error: %s\n", msg);
+    if(emit_on_error)
+        fprintf(stderr, "Error: %s\n", msg);
+
     if(assert_handler) {
         longjmp(*assert_handler, (int)etype);
     } else {
@@ -327,6 +335,7 @@ void lisp_dump_value(int fd, lv_t *v, int level) {
  */
 lv_t *lisp_eval(lv_t *env, lv_t *v) {
     lv_t *fn;
+    lv_t *args;
 
     if(v->type != l_pair) {  // atom?
         return v;
@@ -353,7 +362,11 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
         lv_t *eval_fn = lisp_create_fn(lisp_eval);
 
 	/* execute the function */
-	return L_FN(fn)(env, lisp_map(env, eval_fn, L_CDR(v)));
+        args = L_CDR(v);
+        if(!args)
+            args = lisp_create_null();
+
+	return L_FN(fn)(env, lisp_map(env, eval_fn, args));
     }
 
     assert(0);
@@ -393,7 +406,11 @@ lv_t *lisp_map(lv_t *env, lv_t *fn, lv_t *v) {
     lv_t *rptr = result;
 
     rt_assert(fn->type == l_fn, le_type, "map with non-function");
-    rt_assert(v->type == l_pair, le_type, "map to non-list");
+    rt_assert((v->type == l_pair) || (v->type == l_null),
+              le_type, "map to non-list");
+
+    if(v->type == l_null)
+        return lisp_create_null();
 
     while(vptr) {
         L_CAR(rptr) = L_FN(fn)(env, L_CAR(vptr));
@@ -441,4 +458,14 @@ lv_t *scheme_report_environment(lv_t *env, lv_t *v) {
     }
 
     return newenv;
+}
+
+/**
+ * promote a numeric to a higher-order numeric
+ */
+lv_t *numeric_promote(lv_t *v, lisp_type_t type) {
+    /* only valid promotion right now */
+    assert(v->type == l_int && type == l_float);
+
+    return lisp_create_float((float)L_INT(v));
 }

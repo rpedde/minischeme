@@ -83,6 +83,7 @@ extern lv_t *lisp_quote(lv_t *env, lv_t *v);
 
 extern void c_rt_assert(lisp_exception_t etype, char *msg);
 extern void c_set_top_context(jmp_buf *pjb);
+extern void c_set_emit_on_error(int v);
 
 /**
  * environment stuff

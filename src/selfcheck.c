@@ -17,7 +17,8 @@ static char *current_test;
 void enqueue_error(char *msg, char *file, int line) {
     char *error;
 
-    asprintf(&error, "%s: In test %s:\n%s:%d: error: %s\n", file, current_test, file, line, msg);
+    asprintf(&error, "%s: In test %s:\n%s:%d: error: %s\n",
+             file, current_test, file, line, msg);
     error_list[current_errors++] = error;
 }
 
@@ -65,11 +66,17 @@ int main(int argc, char *argv[]) {
     int success = 1;
     int result;
 
+    /* suppress error messages */
+    c_set_emit_on_error(0);
+
     printf("Testing.\n------------------------------------------------\n");
 
     while((current->test_fn) && (current_errors < MAX_ERRORS)) {
         current_test = current->test_name;
-        printf("%s%*s: ", current->test_name, (int)MAX(1, 40 - strlen(current->test_name)), " ");
+        printf("%s%*s: ", current->test_name,
+               (int)MAX(1, 40 - strlen(current->test_name)), " ");
+
+        fflush(stdout);
         result = current->test_fn(NULL);
         if(result) {
             set_color(green);
@@ -79,7 +86,7 @@ int main(int argc, char *argv[]) {
             printf("Error");
             success = 0;
         }
-        
+
         set_color(none);
         printf("\n");
 

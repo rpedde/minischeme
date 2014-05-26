@@ -76,3 +76,50 @@ lv_t *listp(lv_t *env, lv_t *v) {
         return lisp_create_bool(1);
     return lisp_create_bool(0);
 }
+
+/**
+ * add numeric types
+ */
+lv_t *plus(lv_t *env, lv_t *v) {
+    int i_result = 0;
+    double f_result = 0.0;
+
+    lv_t *current = v;
+    lv_t *op;
+
+    lisp_type_t ret_type = l_int;
+
+    assert(v && (v->type == l_pair || v->type == l_null));
+
+    while(current && (current->type == l_pair)) {
+        op = L_CAR(current);
+
+        rt_assert((op->type == l_int || op->type == l_float),
+                  le_type, "non-numeric add");
+
+        /* promote result, if necessary */
+        if(ret_type != op->type) {
+            if(ret_type == l_int) {
+                ret_type = l_float;
+                f_result = (float)i_result;
+            }
+        }
+
+        if(ret_type == l_float) {
+            if(op->type == l_int) {
+                f_result += (float)L_INT(op);
+            } else {
+                f_result += L_FLOAT(op);
+            }
+        } else {
+            i_result += L_INT(op);
+        }
+
+        current = L_CDR(current);
+    }
+
+    if(ret_type == l_int)
+        return lisp_create_int(i_result);
+
+    return lisp_create_float(f_result);
+}
