@@ -11,4 +11,6 @@ selfcheck
 *.la
 *.lo
 test-definitions.h
-
+grammar.c
+grammar.h
+grammar.out

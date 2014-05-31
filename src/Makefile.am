@@ -1,4 +1,4 @@
-BUILT_SOURCES = parser.h test-definitions.h
+BUILT_SOURCES = test-definitions.h grammar.c grammar.h
 AM_YFLAGS = -d
 
 CLEANFILES = test-definitions.h
@@ -9,8 +9,8 @@ bin_PROGRAMS = minischeme
 TESTS = selfcheck
 check_PROGRAMS = selfcheck
 
-libminischeme_la_SOURCES = parser.y tokenizer.l primitives.h primitives.c \
-	murmurhash.h murmurhash.c builtins.h builtins.c
+libminischeme_la_SOURCES = tokenizer.l primitives.h primitives.c \
+	murmurhash.h murmurhash.c builtins.h builtins.c grammar.c
 
 libminischeme_la_LIBADD = -lgc
 
@@ -27,3 +27,6 @@ EXTRA_DIST = gentests.sh test_parser.c test_builtins.c test_primitives.c
 .FORCE:
 test-definitions.h: .FORCE
 	./gentests.sh
+
+grammar.c: grammar.y
+	lemon grammar.y

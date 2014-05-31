@@ -1,22 +1,24 @@
-
 %include {
 #include <stdint.h>
 
 #include "lisp-types.h"
 #include "primitives.h"
 #include "tokenizer.h"
+#include "assert.h"
+
 }
 
 %token_type {lexer_value_t}
 %default_type {lexer_value_t}
+%extra_argument { lv_t **result }
 
 
-program(A) ::= sexpr(B).         { A = B; }
+program ::= sexpr(B).            { *result = B.lisp_value; }
 
 sexpr(A) ::= atom(B).            { A.lisp_value = B.lisp_value; }
 sexpr(A) ::= list(B).            { A.lisp_value = B.lisp_value; }
 
-list(A) ::= OPENPARN listitems(B) CLOSEPAREN. { A.lisp_value = B.lisp_value; }
+list(A) ::= OPENPAREN listitems(B) CLOSEPAREN.{ A.lisp_value = B.lisp_value; }
 list(A) ::= OPENPAREN CLOSEPAREN.             { A.lisp_value =
                                                 lisp_create_null(); }
 

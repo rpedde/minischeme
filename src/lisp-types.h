@@ -110,10 +110,4 @@ typedef struct lv_t {
 /** given a native c type, box it into a lisp type struct */
 extern lv_t *lisp_create_type(void *value, lisp_type_t type);
 
-/** given a string, parse it and return the parsed lisp_value */
-extern lv_t *lisp_parse_string(char *string);
-
-/** helper for reading parser input from strings */
-extern int parser_read_input(char *buffer, int *read, int max);
-
 #endif /* __LISP_TYPES_H__ */

@@ -65,6 +65,11 @@ extern lv_t *lisp_eval(lv_t *env, lv_t *v);
 extern lv_t *lisp_map(lv_t *env, lv_t *fn, lv_t *v);
 extern lv_t *lisp_apply(lv_t *env, lv_t *fn, lv_t *v);
 
+/**
+ * parser utilities
+ */
+extern lv_t *lisp_parse_string(char *string);
+
 
 /**
  * special forms

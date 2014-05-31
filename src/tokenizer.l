@@ -21,11 +21,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "grammar.h"
 #include "lisp-types.h"
-#include "parser.h"
+#include "tokenizer.h"
 
-#undef YY_INPUT
-#define YY_INPUT(b, r, s)  parser_read_input(b, &r, s)
 %}
 
 %option yylineno

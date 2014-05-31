@@ -33,6 +33,8 @@
 #include "primitives.h"
 #include "builtins.h"
 #include "murmurhash.h"
+#include "grammar.h"
+#include "tokenizer.h"
 
 typedef struct hash_node_t {
     uint32_t key;
@@ -444,6 +446,7 @@ lv_t *lisp_apply(lv_t *env, lv_t *fn, lv_t *v) {
  * hard to get to the rest of the functions without
  * having primitive access to environments, so...
  */
+
 lv_t *null_environment(lv_t *env, lv_t *v) {
     lv_t *newenv = lisp_create_hash();
     return newenv;
@@ -470,4 +473,20 @@ lv_t *numeric_promote(lv_t *v, lisp_type_t type) {
     assert(v->type == l_int && type == l_float);
 
     return lisp_create_float((float)L_INT(v));
+}
+
+/**
+ * given a string, return an ast
+ */
+lv_t *lisp_parse_string(char *string) {
+    YY_BUFFER_STATE buffer = yy_scan_string(string);
+    void *parser = ParseAlloc(safe_malloc);
+    int yv;
+    lv_t *result;
+
+    while((yv = yylex()) != 0) {
+        Parse(parser, yv, yylval, &result);
+    }
+    Parse(parser, 0, yylval, &result);
+    return result;
 }
