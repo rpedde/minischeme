@@ -75,8 +75,10 @@ void repl(int level) {
             parsed_value = NULL;
         }
 
-        if(!parsed_value)
+        if(!parsed_value) {
+            printf("Error: cannot parse input\n");
             continue;
+        }
 
         // e!
         result = lisp_eval(env, parsed_value);

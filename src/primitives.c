@@ -482,7 +482,7 @@ lv_t *lisp_parse_string(char *string) {
     YY_BUFFER_STATE buffer = yy_scan_string(string);
     void *parser = ParseAlloc(safe_malloc);
     int yv;
-    lv_t *result;
+    lv_t *result = NULL;
 
     while((yv = yylex()) != 0) {
         Parse(parser, yv, yylval, &result);
