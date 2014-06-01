@@ -29,6 +29,7 @@
 
 %option yylineno
 %option noyywrap
+%option reentrant
 
 qstring \"[^\"\n]*[\"\n]
 symbol [^\t\r\n \)\(]*
@@ -71,14 +72,4 @@ void yyerror(char *format, ...) {
     va_end(args);
 
     fprintf(stdout, "\n");
-}
-
-#undef yywrap
-
-int yywrap(void) {
-    return(-1);
-}
-
-void yyflush(void) {
-    YY_FLUSH_BUFFER;
 }

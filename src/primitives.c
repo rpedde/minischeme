@@ -516,14 +516,19 @@ lv_t *numeric_promote(lv_t *v, lisp_type_t type) {
  * given a string, return an ast
  */
 lv_t *lisp_parse_string(char *string) {
-    YY_BUFFER_STATE buffer = yy_scan_string(string);
+    YY_BUFFER_STATE buffer;
     void *parser = ParseAlloc(safe_malloc);
     int yv;
     lv_t *result = NULL;
+    void *scanner;
 
-    while((yv = yylex()) != 0) {
+    yylex_init(&scanner);
+    buffer = yy_scan_string(string, scanner);
+
+    while((yv = yylex(scanner)) != 0) {
         Parse(parser, yv, yylval, &result);
     }
+    yylex_destroy(scanner);
     Parse(parser, 0, yylval, &result);
     return result;
 }
