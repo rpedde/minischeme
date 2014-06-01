@@ -29,5 +29,7 @@ lv_t *listp(lv_t *env, lv_t *v);
 lv_t *pairp(lv_t *env, lv_t *v);
 lv_t *plus(lv_t *env, lv_t *v);
 lv_t *equalp(lv_t *env, lv_t *v);
+lv_t *set_cdr(lv_t *env, lv_t *v);
+lv_t *set_car(lv_t *env, lv_t *v);
 
 #endif /* __BUILTINS_H__ */

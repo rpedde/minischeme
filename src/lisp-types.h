@@ -36,7 +36,8 @@ typedef enum lisp_type_t {
 typedef enum lisp_exception_t {
     le_arity = 1,      /* wrong arity for function */
     le_type,           /* wrong type for operation */
-    le_lookup          /* could not bind -- not in environment */
+    le_lookup,         /* could not bind -- not in environment */
+    le_internal        /* internal error (malloc?) */
 } lisp_exception_t;
 
 
@@ -52,9 +53,13 @@ typedef lv_t *(*lisp_method_t)(lv_t *, lv_t*);
 #define L_STR(what)     what->value.c.value
 #define L_CDR(what)     what->value.p.cdr
 #define L_CAR(what)     what->value.p.car
-#define L_CADR(what)    L_CAR(L_CDR(what))
 #define L_HASH(what)    what->value.h.value
 #define L_FN(what)      what->value.l.fn
+
+#define L_CADR(what)    L_CAR(L_CDR(what))
+#define L_CAAR(what)    L_CAR(L_CAR(what))
+#define L_CDDR(what)    L_CDR(L_CDR(what))
+#define L_CADDR(what)   L_CAR(L_CDR(L_CDR(what)))
 
 typedef struct lisp_int_t {
     int64_t value;

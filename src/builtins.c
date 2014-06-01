@@ -204,3 +204,27 @@ lv_t *plus(lv_t *env, lv_t *v) {
 
     return lisp_create_float(f_result);
 }
+
+lv_t *set_cdr(lv_t *env, lv_t *v) {
+    assert(v && (v->type == l_pair));
+
+    rt_assert(c_list_length(v) == 2, le_arity, "set-cdr arity");
+    rt_assert(L_CAR(v)->type == l_pair, le_type, "set-cdr on non-pair");
+
+    if(L_CADR(v)->type == l_null)
+        L_CDR(L_CAR(v)) = NULL;
+    else
+        L_CDR(L_CAR(v)) = L_CADR(v);
+
+    return lisp_create_null();
+}
+
+lv_t *set_car(lv_t *env, lv_t *v) {
+    assert(v && (v->type == l_pair));
+
+    rt_assert(c_list_length(v) == 2, le_arity, "set-cdr arity");
+    rt_assert(L_CAR(v)->type == l_pair, le_type, "set-car on non-pair");
+
+    L_CAR(L_CAR(v)) = L_CADR(v);
+    return lisp_create_null();
+}

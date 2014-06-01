@@ -46,35 +46,38 @@ extern lv_t *lisp_create_hash(void);
 extern lv_t *lisp_create_null(void);
 
 /**
+ * parsing utilities
+ */
+extern lv_t *lisp_parse_string(char *string);
+
+/**
  * hash utilities
  */
 extern lv_t *c_hash_fetch(lv_t *hash, lv_t *key);
 extern int c_hash_delete(lv_t *hash, lv_t *key);
 extern int c_hash_insert(lv_t *hash, lv_t *key, lv_t *value);
 
+extern lv_t *c_env_lookup(lv_t *env, lv_t *key);
+
 /**
  * inspection utilities
  */
 extern void lisp_dump_value(int fd, lv_t *value, int level);
 extern int c_list_length(lv_t *v);
+extern lv_t *c_make_list(lv_t *item, ...);
 
 /**
  * actual language items
  */
 extern lv_t *lisp_eval(lv_t *env, lv_t *v);
-extern lv_t *lisp_map(lv_t *env, lv_t *fn, lv_t *v);
-extern lv_t *lisp_apply(lv_t *env, lv_t *fn, lv_t *v);
-
-/**
- * parser utilities
- */
-extern lv_t *lisp_parse_string(char *string);
-
+extern lv_t *lisp_map(lv_t *env, lv_t *v);
+extern lv_t *lisp_apply(lv_t *env, lv_t *v);
 
 /**
  * special forms
  */
 extern lv_t *lisp_quote(lv_t *env, lv_t *v);
+extern lv_t *lisp_define(lv_t *env, lv_t *sym, lv_t *v);
 
 
 /**

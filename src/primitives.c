@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <setjmp.h>
+#include <stdarg.h>
 
 #include <gc.h>
 
@@ -47,7 +48,7 @@ typedef struct environment_list_t {
 } environment_list_t;
 
 static jmp_buf *assert_handler = NULL;
-static emit_on_error = 1;
+static int emit_on_error = 1;
 
 static environment_list_t s_r5_list[] = {
     { "null?", nullp },
@@ -60,6 +61,11 @@ static environment_list_t s_r5_list[] = {
     { "+", plus },
     { "null-environment", null_environment },
     { "scheme-report-environment", scheme_report_environment },
+    { "eval", lisp_eval },
+    { "map", lisp_map },
+    { "apply", lisp_apply },
+    { "set-cdr!", set_cdr },
+    { "set-car!", set_car },
     { NULL, NULL }
 };
 
@@ -161,6 +167,9 @@ int c_hash_insert(lv_t *hash,
     pnew->value = value;
 
     result = tsearch(pnew, &L_HASH(hash), s_hash_cmp);
+    if((*(hash_node_t **)result)->value != value)
+        (*(hash_node_t **)result)->value = value;
+
     return(result != NULL);
 }
 
@@ -340,24 +349,37 @@ void lisp_dump_value(int fd, lv_t *v, int level) {
 lv_t *lisp_eval(lv_t *env, lv_t *v) {
     lv_t *fn;
     lv_t *args;
+    lv_t *result;
+
+    if(v->type == l_sym) {
+        result = c_env_lookup(env, v);
+        if(result)
+            return result;
+    } /* otherwise, return symbol... */
 
     if(v->type != l_pair) {  // atom?
         return v;
     }
 
-    /* the only special form we'll recognize is quote.  ;) */
+    /* check for special forms and functions */
+
     if(v->type == l_pair) {
 	/* test special forms first */
 	if(L_CAR(v)->type == l_sym) {
             if(strcmp(L_SYM(L_CAR(v)), "quote") == 0)
 		return lisp_quote(env, L_CDR(v));
+            else if(strcmp(L_SYM(L_CAR(v)), "define") == 0) {
+                rt_assert(c_list_length(L_CDR(v)) == 2, le_arity,
+                          "define arity");
+                return lisp_define(env, L_CADR(v), lisp_eval(env, L_CADDR(v)));
+            }
 	}
 
 	/* test symbols */
 	if(v->type == l_fn)
             fn = v;
 	else if(L_CAR(v)->type == l_sym) {
-            lv_t *tmp = c_hash_fetch(env, L_CAR(v));
+            lv_t *tmp = c_env_lookup(env, L_CAR(v));
             rt_assert(tmp, le_lookup, "unknown function");
             rt_assert(tmp->type == l_fn, le_type, "eval a non-function");
             fn = tmp;
@@ -370,7 +392,7 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
         if(!args)
             args = lisp_create_null();
 
-	return L_FN(fn)(env, lisp_map(env, eval_fn, args));
+	return L_FN(fn)(env, lisp_map(env, c_make_list(eval_fn, args, NULL)));
     }
 
     assert(0);
@@ -404,17 +426,25 @@ int c_list_length(lv_t *v) {
  * map a function onto a list, returning the
  * resulting list
  */
-lv_t *lisp_map(lv_t *env, lv_t *fn, lv_t *v) {
-    lv_t *vptr = v;
+lv_t *lisp_map(lv_t *env, lv_t *v) {
+    lv_t *vptr;
     lv_t *result = lisp_create_pair(NULL, NULL);
     lv_t *rptr = result;
+    lv_t *fn, *list;
+
+    rt_assert(c_list_length(v) == 2, le_arity, "map arity");
+
+    fn = L_CAR(v);
+    list = L_CADR(v);
 
     rt_assert(fn->type == l_fn, le_type, "map with non-function");
-    rt_assert((v->type == l_pair) || (v->type == l_null),
+    rt_assert((list->type == l_pair) || (list->type == l_null),
               le_type, "map to non-list");
 
-    if(v->type == l_null)
-        return lisp_create_null();
+    if(list->type == l_null)
+        return list;
+
+    vptr = list;
 
     while(vptr) {
         L_CAR(rptr) = L_FN(fn)(env, L_CAR(vptr));
@@ -432,14 +462,21 @@ lv_t *lisp_map(lv_t *env, lv_t *fn, lv_t *v) {
 /**
  * execute a lisp function with the passed arg list
  */
-lv_t *lisp_apply(lv_t *env, lv_t *fn, lv_t *v) {
+lv_t *lisp_apply(lv_t *env, lv_t *v) {
+    lv_t *fn, *list;
+
+    rt_assert(c_list_length(v) == 2, le_arity, "apply arity");
+
+    fn = L_CAR(v);
+    list = L_CADR(v);
+
     rt_assert(fn->type == l_fn, le_type, "apply with non-function");
-    rt_assert(v->type == l_pair, le_type, "apply to non-list");
+    rt_assert(list->type == l_pair, le_type, "apply to non-list");
 
     /* here we would check arity, and do arg fixups
      * (&rest, etc) */
 
-    return L_FN(fn)(env, v);
+    return L_FN(fn)(env, list);
 }
 
 /**
@@ -449,12 +486,12 @@ lv_t *lisp_apply(lv_t *env, lv_t *fn, lv_t *v) {
 
 lv_t *null_environment(lv_t *env, lv_t *v) {
     lv_t *newenv = lisp_create_hash();
-    return newenv;
+    return lisp_create_pair(newenv, NULL);
 }
 
 lv_t *scheme_report_environment(lv_t *env, lv_t *v) {
     environment_list_t *current = s_r5_list;
-    lv_t *newenv = null_environment(env, v);
+    lv_t *newenv = lisp_create_hash();
 
     while(current && current->name) {
         c_hash_insert(newenv, lisp_create_string(current->name),
@@ -462,7 +499,7 @@ lv_t *scheme_report_environment(lv_t *env, lv_t *v) {
         current++;
     }
 
-    return newenv;
+    return lisp_create_pair(newenv, NULL);
 }
 
 /**
@@ -489,4 +526,65 @@ lv_t *lisp_parse_string(char *string) {
     }
     Parse(parser, 0, yylval, &result);
     return result;
+}
+
+lv_t *lisp_define(lv_t *env, lv_t *sym, lv_t *v) {
+    /* this is probably not a good or completely safe
+     * check of an environment */
+    rt_assert(env->type == l_pair &&
+              L_CAR(env) &&
+              L_CAR(env)->type == l_hash, le_type,
+              "Not a valid environment");
+
+    rt_assert(sym->type == l_sym, le_type, "cannot define non-symbol");
+
+    rt_assert(c_hash_insert(L_CAR(env), sym, v), le_internal,
+        "error inserting hash element");
+
+    return lisp_create_null();
+}
+
+/**
+ * make a sequence of lv_t into a list, terminated by NULL
+ */
+lv_t *c_make_list(lv_t *item, ...) {
+    va_list argp;
+    lv_t *result;
+    lv_t *head;
+    lv_t *arg;
+
+    if(!item)
+        return lisp_create_null();
+
+    va_start(argp, item);
+
+    result = lisp_create_pair(item, NULL);
+    head = result;
+
+    while((arg = va_arg(argp, lv_t *))) {
+        L_CDR(head) = lisp_create_pair(arg, NULL);
+        head = L_CDR(head);
+    }
+
+    va_end(argp);
+    return result;
+}
+
+lv_t *c_env_lookup(lv_t *env, lv_t *key) {
+    lv_t *current;
+    lv_t *result;
+
+    rt_assert(env->type == l_pair &&
+              L_CAR(env) &&
+              L_CAR(env)->type == l_hash, le_type,
+              "Not a valid environment");
+
+    current=env;
+    while(current) {
+        if((result = c_hash_fetch(L_CAR(current), key)))
+            return result;
+        current = L_CDR(current);
+    }
+
+    return NULL;
 }

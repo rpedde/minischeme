@@ -49,13 +49,13 @@ int test_environment(void *scaffold) {
     lv_t *env = scheme_report_environment(NULL, NULL);
 
     /* make sure it's generally working */
-    fn = c_hash_fetch(env, lisp_create_string("lsdjfljsdflsj"));
-    assert(!fn);
+    assert(c_env_lookup(env, lisp_create_symbol("asdlfjkasf")) == NULL);
 
-    fn = c_hash_fetch(env, lisp_create_string("null?"));
+    /* check string and symbol interop */
+    fn = c_env_lookup(env, lisp_create_string("null?"));
     assert(fn);
 
-    fn2 = c_hash_fetch(env, lisp_create_symbol("null?"));
+    fn2 = c_env_lookup(env, lisp_create_symbol("null?"));
     assert(fn2);
 
     assert(fn == fn2);
