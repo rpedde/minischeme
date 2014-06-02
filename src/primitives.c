@@ -419,14 +419,17 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
 	if(L_CAR(v)->type == l_sym) {
             if(strcmp(L_SYM(L_CAR(v)), "quote") == 0) {
 		return lisp_quote(env, L_CDR(v));
-            } else if(strcmp(L_SYM(L_CAR(v)), "define") == 0) {
+            } else if(!strcmp(L_SYM(L_CAR(v)), "define")) {
                 rt_assert(c_list_length(L_CDR(v)) == 2, le_arity,
                           "define arity");
                 return lisp_define(env, L_CADR(v), lisp_eval(env, L_CADDR(v)));
-            } else if(strcmp(L_SYM(L_CAR(v)), "lambda") == 0) {
+            } else if(!strcmp(L_SYM(L_CAR(v)), "lambda")) {
                 rt_assert(c_list_length(L_CDR(v)) == 2, le_arity,
                           "lambda arity");
                 return lisp_create_lambda(env, L_CADR(v), L_CADDR(v));
+            } else if(!strcmp(L_SYM(L_CAR(v)), "begin")) {
+                rt_assert(L_CADR(v), le_arity, "begin arity");
+                return lisp_begin(env, L_CADR(v));
             }
 	}
 
@@ -661,4 +664,24 @@ lv_t *c_env_lookup(lv_t *env, lv_t *key) {
     }
 
     return NULL;
+}
+
+/**
+ * begin special form
+ *
+ * (begin (expr1 expr2 expr3))
+ */
+lv_t *lisp_begin(lv_t *env, lv_t *v) {
+    lv_t *current;
+    lv_t *retval;
+
+    rt_assert(v->type == l_pair, le_type, "cannot begin non-list");
+
+    current = v;
+    while(v && (L_CAR(v))) {
+        retval = lisp_eval(env, L_CAR(v));
+        v = L_CDR(v);
+    }
+
+    return retval;
 }

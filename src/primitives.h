@@ -52,6 +52,7 @@ extern lv_t *lisp_create_lambda(lv_t *env, lv_t *formals, lv_t *body);
  */
 extern lv_t *lisp_parse_string(char *string);
 extern lv_t *lisp_exec_fn(lv_t *env, lv_t *fn, lv_t *args);
+extern lv_t *lisp_begin(lv_t *env, lv_t *v);
 
 /**
  * hash utilities
