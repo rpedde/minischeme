@@ -61,8 +61,6 @@ static environment_list_t s_r5_list[] = {
     { "+", plus },
     { "null-environment", null_environment },
     { "scheme-report-environment", scheme_report_environment },
-    { "eval", lisp_eval },
-    { "map", lisp_map },
     { "apply", lisp_apply },
     { "set-cdr!", set_cdr },
     { "set-car!", set_car },
@@ -293,8 +291,23 @@ lv_t *lisp_create_bool(int value) {
 /**
  * typechecked wrapper around lisp_create_type for functions
  */
-lv_t *lisp_create_fn(lisp_method_t value) {
-    return lisp_create_type(value, l_fn);
+lv_t *lisp_create_native_fn(lisp_method_t value) {
+    lv_t *fn = lisp_create_type(value, l_fn);
+    L_FN_ARGS(fn) = NULL;
+    L_FN_BODY(fn) = NULL;
+
+    return fn;
+}
+
+/**
+ * lambda-style function, not builtin
+ */
+lv_t *lisp_create_lambda(lv_t *formals, lv_t *body) {
+    lv_t *fn = lisp_create_type(NULL, l_fn);
+    L_FN_ARGS(fn) = formals;
+    L_FN_BODY(fn) = body;
+
+    return fn;
 }
 
 /**
@@ -336,12 +349,48 @@ void lisp_dump_value(int fd, lv_t *v, int level) {
         }
         dprintf(fd, ")");
         break;
-
+    case l_fn:
+        if(L_FN(v) == NULL)
+            dprintf(fd, "<lambda@%p>", v);
+        else
+            dprintf(fd, "<built-in@%p>", v);
+        break;
     default:
         // missing a type check.
         assert(0);
     }
 }
+
+lv_t *lisp_exec_fn(lv_t *env, lv_t *fn, lv_t *args) {
+    lv_t *parsed_args;
+    lv_t *env_layer;
+    lv_t *aptr, *fptr;
+
+    assert(env && fn && args);
+    rt_assert(fn->type == l_fn, le_type, "not a function");
+
+    if(L_FN(fn) != NULL) {
+        /* is a native (builtin) function */
+        return L_FN(fn)(env, args);
+    }
+
+    rt_assert(c_list_length(args) == c_list_length(L_FN_ARGS(fn)),
+              le_arity, "arity");
+
+    env_layer = lisp_create_hash();
+
+    aptr = args;
+    fptr = L_FN_ARGS(fn);
+
+    while(fptr && L_CAR(fptr)) {
+        c_hash_insert(env_layer, L_CAR(fptr), L_CAR(aptr));
+        aptr = L_CDR(aptr);
+        fptr = L_CDR(fptr);
+    }
+
+    return lisp_eval(lisp_create_pair(env_layer, env), L_FN_BODY(fn));
+}
+
 
 /**
  * evaluate a lisp value
@@ -366,33 +415,46 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
     if(v->type == l_pair) {
 	/* test special forms first */
 	if(L_CAR(v)->type == l_sym) {
-            if(strcmp(L_SYM(L_CAR(v)), "quote") == 0)
+            if(strcmp(L_SYM(L_CAR(v)), "quote") == 0) {
 		return lisp_quote(env, L_CDR(v));
-            else if(strcmp(L_SYM(L_CAR(v)), "define") == 0) {
+            } else if(strcmp(L_SYM(L_CAR(v)), "define") == 0) {
                 rt_assert(c_list_length(L_CDR(v)) == 2, le_arity,
                           "define arity");
                 return lisp_define(env, L_CADR(v), lisp_eval(env, L_CADDR(v)));
+            } else if(strcmp(L_SYM(L_CAR(v)), "lambda") == 0) {
+                rt_assert(c_list_length(L_CDR(v)) == 2, le_arity,
+                          "lambda arity");
+                return lisp_create_lambda(L_CADR(v), L_CADDR(v));
             }
 	}
 
-	/* test symbols */
-	if(v->type == l_fn)
-            fn = v;
-	else if(L_CAR(v)->type == l_sym) {
-            lv_t *tmp = c_env_lookup(env, L_CAR(v));
-            rt_assert(tmp, le_lookup, "unknown function");
-            rt_assert(tmp->type == l_fn, le_type, "eval a non-function");
-            fn = tmp;
-	}
+        /* otherwise, eval all the items, and execute */
+        args = lisp_map(env, lisp_create_pair(lisp_create_native_fn(lisp_eval), v));
 
-        lv_t *eval_fn = lisp_create_fn(lisp_eval);
+        /* make sure it's a function */
+        rt_assert(L_CAR(args)->type == l_fn, le_type, "eval a non-function");
 
-	/* execute the function */
-        args = L_CDR(v);
-        if(!args)
-            args = lisp_create_null();
+        /* and go. */
+        return lisp_exec_fn(env, L_CAR(args), L_CDR(args));
 
-	return L_FN(fn)(env, lisp_map(env, c_make_list(eval_fn, args, NULL)));
+	/* /\* test symbols *\/ */
+	/* if(v->type == l_fn) */
+        /*     fn = v; */
+	/* else if(L_CAR(v)->type == l_sym) { */
+        /*     lv_t *tmp = c_env_lookup(env, L_CAR(v)); */
+        /*     rt_assert(tmp, le_lookup, "unknown function"); */
+        /*     rt_assert(tmp->type == l_fn, le_type, "eval a non-function"); */
+        /*     fn = tmp; */
+	/* } */
+
+        /* lv_t *eval_fn = lisp_create_native_fn(lisp_eval); */
+
+	/* /\* execute the function *\/ */
+        /* args = L_CDR(v); */
+        /* if(!args) */
+        /*     args = lisp_create_null(); */
+
+	/* return L_FN(fn)(env, lisp_map(env, c_make_list(eval_fn, args, NULL))); */
     }
 
     assert(0);
@@ -432,10 +494,8 @@ lv_t *lisp_map(lv_t *env, lv_t *v) {
     lv_t *rptr = result;
     lv_t *fn, *list;
 
-    rt_assert(c_list_length(v) == 2, le_arity, "map arity");
-
     fn = L_CAR(v);
-    list = L_CADR(v);
+    list = L_CDR(v);
 
     rt_assert(fn->type == l_fn, le_type, "map with non-function");
     rt_assert((list->type == l_pair) || (list->type == l_null),
@@ -468,7 +528,7 @@ lv_t *lisp_apply(lv_t *env, lv_t *v) {
     rt_assert(c_list_length(v) == 2, le_arity, "apply arity");
 
     fn = L_CAR(v);
-    list = L_CADR(v);
+    list = L_CDR(v);
 
     rt_assert(fn->type == l_fn, le_type, "apply with non-function");
     rt_assert(list->type == l_pair, le_type, "apply to non-list");
@@ -495,7 +555,7 @@ lv_t *scheme_report_environment(lv_t *env, lv_t *v) {
 
     while(current && current->name) {
         c_hash_insert(newenv, lisp_create_string(current->name),
-                      lisp_create_fn(current->fn));
+                      lisp_create_native_fn(current->fn));
         current++;
     }
 
@@ -572,6 +632,7 @@ lv_t *c_make_list(lv_t *item, ...) {
     }
 
     va_end(argp);
+
     return result;
 }
 

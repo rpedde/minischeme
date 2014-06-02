@@ -44,11 +44,14 @@ extern lv_t *lisp_create_int(int64_t value);
 extern lv_t *lisp_create_bool(int value);
 extern lv_t *lisp_create_hash(void);
 extern lv_t *lisp_create_null(void);
+extern lv_t *lisp_create_native_fn(lisp_method_t value);
+extern lv_t *lisp_create_lambda(lv_t *formals, lv_t *body);
 
 /**
- * parsing utilities
+ * misc utilities
  */
 extern lv_t *lisp_parse_string(char *string);
+extern lv_t *lisp_exec_fn(lv_t *env, lv_t *fn, lv_t *args);
 
 /**
  * hash utilities
@@ -56,7 +59,6 @@ extern lv_t *lisp_parse_string(char *string);
 extern lv_t *c_hash_fetch(lv_t *hash, lv_t *key);
 extern int c_hash_delete(lv_t *hash, lv_t *key);
 extern int c_hash_insert(lv_t *hash, lv_t *key, lv_t *value);
-
 extern lv_t *c_env_lookup(lv_t *env, lv_t *key);
 
 /**
@@ -78,7 +80,6 @@ extern lv_t *lisp_apply(lv_t *env, lv_t *v);
  */
 extern lv_t *lisp_quote(lv_t *env, lv_t *v);
 extern lv_t *lisp_define(lv_t *env, lv_t *sym, lv_t *v);
-
 
 /**
  * runtime asserts
