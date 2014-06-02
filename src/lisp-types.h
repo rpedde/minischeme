@@ -58,6 +58,7 @@ typedef lv_t *(*lisp_method_t)(lv_t *, lv_t*);
 #define L_FN(what)      what->value.l.fn
 #define L_FN_ARGS(what) what->value.l.formals
 #define L_FN_BODY(what) what->value.l.body
+#define L_FN_ENV(what)  what->value.l.env
 
 #define L_CADR(what)    L_CAR(L_CDR(what))
 #define L_CAAR(what)    L_CAR(L_CAR(what))
@@ -101,6 +102,7 @@ typedef struct lisp_fn_t {
     lisp_method_t fn;
     lv_t *formals;
     lv_t *body;
+    lv_t *env;
 } lisp_fn_t;
 
 typedef struct lv_t {

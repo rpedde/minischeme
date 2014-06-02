@@ -295,6 +295,7 @@ lv_t *lisp_create_native_fn(lisp_method_t value) {
     lv_t *fn = lisp_create_type(value, l_fn);
     L_FN_ARGS(fn) = NULL;
     L_FN_BODY(fn) = NULL;
+    L_FN_ENV(fn) = NULL;
 
     return fn;
 }
@@ -302,8 +303,9 @@ lv_t *lisp_create_native_fn(lisp_method_t value) {
 /**
  * lambda-style function, not builtin
  */
-lv_t *lisp_create_lambda(lv_t *formals, lv_t *body) {
+lv_t *lisp_create_lambda(lv_t *env, lv_t *formals, lv_t *body) {
     lv_t *fn = lisp_create_type(NULL, l_fn);
+    L_FN_ENV(fn) = env;
     L_FN_ARGS(fn) = formals;
     L_FN_BODY(fn) = body;
 
@@ -388,7 +390,7 @@ lv_t *lisp_exec_fn(lv_t *env, lv_t *fn, lv_t *args) {
         fptr = L_CDR(fptr);
     }
 
-    return lisp_eval(lisp_create_pair(env_layer, env), L_FN_BODY(fn));
+    return lisp_eval(lisp_create_pair(env_layer, L_FN_ENV(fn)), L_FN_BODY(fn));
 }
 
 
@@ -424,18 +426,24 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
             } else if(strcmp(L_SYM(L_CAR(v)), "lambda") == 0) {
                 rt_assert(c_list_length(L_CDR(v)) == 2, le_arity,
                           "lambda arity");
-                return lisp_create_lambda(L_CADR(v), L_CADDR(v));
+                return lisp_create_lambda(env, L_CADR(v), L_CADDR(v));
             }
 	}
 
         /* otherwise, eval all the items, and execute */
-        args = lisp_map(env, lisp_create_pair(lisp_create_native_fn(lisp_eval), v));
+        result = lisp_map(env, lisp_create_pair(lisp_create_native_fn(lisp_eval), v));
 
         /* make sure it's a function */
-        rt_assert(L_CAR(args)->type == l_fn, le_type, "eval a non-function");
+        fn = L_CAR(result);
+        args = L_CDR(result);
+
+        rt_assert(fn->type == l_fn, le_type, "eval a non-function");
+
+        if(!args)
+            args = lisp_create_null();
 
         /* and go. */
-        return lisp_exec_fn(env, L_CAR(args), L_CDR(args));
+        return lisp_exec_fn(env, fn, args);
 
 	/* /\* test symbols *\/ */
 	/* if(v->type == l_fn) */

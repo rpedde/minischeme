@@ -45,7 +45,7 @@ extern lv_t *lisp_create_bool(int value);
 extern lv_t *lisp_create_hash(void);
 extern lv_t *lisp_create_null(void);
 extern lv_t *lisp_create_native_fn(lisp_method_t value);
-extern lv_t *lisp_create_lambda(lv_t *formals, lv_t *body);
+extern lv_t *lisp_create_lambda(lv_t *env, lv_t *formals, lv_t *body);
 
 /**
  * misc utilities
