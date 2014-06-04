@@ -75,6 +75,8 @@ extern lv_t *c_make_list(lv_t *item, ...);
 extern lv_t *lisp_eval(lv_t *env, lv_t *v);
 extern lv_t *lisp_map(lv_t *env, lv_t *v);
 extern lv_t *lisp_apply(lv_t *env, lv_t *v);
+extern lv_t *c_sequential_eval(lv_t *env, lv_t *v);
+
 
 /**
  * special forms

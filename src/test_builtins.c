@@ -17,20 +17,20 @@ int test_special_forms_quote(void *scaffold) {
     env = scheme_report_environment(NULL, NULL);
 
     r = lisp_parse_string("(quote 1)");
-    er = lisp_eval(env, r);
+    er = c_sequential_eval(env, r);
 
     assert(er->type == l_int);
     assert(L_INT(er) == 1);
 
     r = lisp_parse_string("(quote (1 2 3))");
-    er = lisp_eval(env, r);
+    er = c_sequential_eval(env, r);
 
     assert(er->type == l_pair);
     assert(c_list_length(er) == 3);
 
     c_set_top_context(&jb);
     if((ex_result = setjmp(jb)) == 0) {
-        r = lisp_eval(env, lisp_parse_string("(quote 1 2 3)"));
+        r = c_sequential_eval(env, lisp_parse_string("(quote 1 2 3)"));
         /* we expect a runtime assert here, so this shouldn't run */
         assert(0);
     } else {
@@ -48,14 +48,14 @@ int test_plus(void *scaffold) {
     int ex_result;
 
     /* test base case */
-    r = lisp_eval(env, lisp_parse_string("(+)"));
+    r = c_sequential_eval(env, lisp_parse_string("(+)"));
     assert(r->type == l_int);
     assert(L_INT(r) == 0);
 
     /* test numeric adds only */
     c_set_top_context(&jb);
     if((ex_result = setjmp(jb)) == 0) {
-        r = lisp_eval(env, lisp_parse_string("(+ 1 (quote arf))"));
+        r = c_sequential_eval(env, lisp_parse_string("(+ 1 (quote arf))"));
         /* we expect a runtime assert here, so this shouldn't run */
         assert(0);
     } else {
@@ -64,19 +64,19 @@ int test_plus(void *scaffold) {
     c_set_top_context(NULL);
 
     /* test simple int add */
-    r = lisp_eval(env, lisp_parse_string("(+ 1 2)"));
+    r = c_sequential_eval(env, lisp_parse_string("(+ 1 2)"));
 
     assert(r->type == l_int);
     assert(L_INT(r) == 3);
 
     /* test promotion */
-    r = lisp_eval(env, lisp_parse_string("(+ 1 0.2)"));
+    r = c_sequential_eval(env, lisp_parse_string("(+ 1 0.2)"));
 
     assert(r->type == l_float);
     assert(L_FLOAT(r) == 1.2);
 
     /* test listwise adds */
-    r = lisp_eval(env, lisp_parse_string("(+ 1 2 3)"));
+    r = c_sequential_eval(env, lisp_parse_string("(+ 1 2 3)"));
 
     assert(r->type == l_int);
     assert(L_INT(r) == 6);
@@ -108,7 +108,7 @@ int test_equal(void *scaffold) {
 
     idx = 0;
     while(passing[idx]) {
-        r = lisp_eval(env, lisp_parse_string(passing[idx]));
+        r = c_sequential_eval(env, lisp_parse_string(passing[idx]));
         assert(r->type == l_bool);
         assert(L_BOOL(r) == 1);
         idx++;

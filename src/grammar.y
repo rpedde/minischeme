@@ -13,7 +13,7 @@
 %extra_argument { lv_t **result }
 
 
-program ::= sexpr(B).            { *result = B.lisp_value; }
+program ::= listitems(A).        { *result = A.lisp_value; }
 
 sexpr(A) ::= atom(B).            { A.lisp_value = B.lisp_value; }
 sexpr(A) ::= list(B).            { A.lisp_value = B.lisp_value; }

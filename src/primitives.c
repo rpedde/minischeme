@@ -685,3 +685,24 @@ lv_t *lisp_begin(lv_t *env, lv_t *v) {
 
     return retval;
 }
+
+/**
+ * eval a list of items, one after the other, returning the
+ * value of the last eval
+ */
+lv_t *c_sequential_eval(lv_t *env, lv_t *v) {
+    lv_t *current = v;
+    lv_t *result;
+
+    assert(v->type == l_pair || v->type == l_null);
+
+    if(v->type == l_null)
+        return v;
+
+    while(current && L_CAR(current)) {
+        result = lisp_eval(env, L_CAR(current));
+        current = L_CDR(current);
+    }
+
+    return result;
+}

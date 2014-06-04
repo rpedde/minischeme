@@ -76,12 +76,11 @@ void repl(int level) {
         }
 
         if(!parsed_value) {
-            printf("Error: cannot parse input\n");
             continue;
         }
 
         // e!
-        result = lisp_eval(env, parsed_value);
+        result = c_sequential_eval(env, parsed_value);
 
         // p!
         if(result && !is_nil(result)) {
