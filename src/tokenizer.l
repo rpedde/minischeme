@@ -25,11 +25,19 @@
 #include "lisp-types.h"
 #include "tokenizer.h"
 
+/* handle locations */
+
+
+#define YY_USER_ACTION yylloc->first_line = yylloc->last_line = yylineno; \
+    yylloc->first_column = yycolumn; yylloc->last_column = yycolumn+yyleng-1; \
+    yycolumn += yyleng;
+
 %}
 
 %option yylineno
 %option noyywrap
 %option reentrant
+%option bison-locations
 
 qstring \"[^\"\n]*[\"\n]
 symbol [^\t\r\n \)\(]*
@@ -44,19 +52,19 @@ symbol [^\t\r\n \)\(]*
 
 \.                             { return(DOT); }
 
-\.[0-9]+                       { yylval.f_value = atof(yytext); return(FLOAT); }
-[0-9]+\.[0-9]*                 { yylval.f_value = atof(yytext); return(FLOAT); }
+\.[0-9]+                       { yylval->f_value = atof(yytext); return(FLOAT); }
+[0-9]+\.[0-9]*                 { yylval->f_value = atof(yytext); return(FLOAT); }
 
-[0-9]+                         { yylval.i_value = atoi(yytext); return(INTEGER); }
+[0-9]+                         { yylval->i_value = atoi(yytext); return(INTEGER); }
 
-{qstring}                      { yylval.s_value = (char*)&(strdup(yytext)[1]);
-                                 yylval.s_value[strlen(yylval.s_value) - 1] = '\0';
+{qstring}                      { yylval->s_value = (char*)&(strdup(yytext)[1]);
+                                 yylval->s_value[strlen(yylval->s_value) - 1] = '\0';
                                  return(STRING); }
 
-\#t                            { yylval.i_value = 1; return(BOOL); }
-\#f                            { yylval.i_value = 0; return(BOOL); }
+\#t                            { yylval->i_value = 1; return(BOOL); }
+\#f                            { yylval->i_value = 0; return(BOOL); }
 
-{symbol}                       { yylval.s_value = (char*)strdup(yytext);
+{symbol}                       { yylval->s_value = (char*)strdup(yytext);
                                  return(SYMBOL); }
 
 %%

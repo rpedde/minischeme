@@ -592,15 +592,17 @@ lv_t *lisp_parse_string(char *string) {
     int yv;
     lv_t *result = NULL;
     void *scanner;
+    YYLTYPE yyl;
+    YYSTYPE yys;
 
     yylex_init(&scanner);
     buffer = yy_scan_string(string, scanner);
 
-    while((yv = yylex(scanner)) != 0) {
-        Parse(parser, yv, yylval, &result);
+    while((yv = yylex(&yys, &yyl, scanner)) != 0) {
+        Parse(parser, yv, yys, &result);
     }
     yylex_destroy(scanner);
-    Parse(parser, 0, yylval, &result);
+    Parse(parser, 0, yys, &result);
     return result;
 }
 

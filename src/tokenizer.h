@@ -35,8 +35,16 @@ typedef union lexer_value_t {
 YYSTYPE yylval;
 
 /* predeclare the lex/yacc stuff */
+typedef struct yyltype_t {
+    int first_line;
+    int first_column;
+    int last_line;
+    int last_column;
+} yyltype_t;
+
+#define YYLTYPE yyltype_t
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
-extern int yylex(void *yyscanner);
+extern int yylex(YYSTYPE *yyval_param, YYLTYPE *yylloc_param, void *yyscanner);
 extern YY_BUFFER_STATE yy_scan_string(const char *, void *yyscanner );
 extern int yylex_init(void **scanner);
 extern int yylex_destroy (void *scanner);
