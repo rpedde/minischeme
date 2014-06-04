@@ -18,19 +18,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef __BUILTINS_H__
-#define __BUILTINS_H__
+#include <stdio.h>
+#include <stdint.h>
 
-lv_t *nullp(lv_t *env, lv_t *v);
-lv_t *symbolp(lv_t *env, lv_t *v);
-lv_t *atomp(lv_t *env, lv_t *v);
-lv_t *consp(lv_t *env, lv_t *v);
-lv_t *listp(lv_t *env, lv_t *v);
-lv_t *pairp(lv_t *env, lv_t *v);
-lv_t *plus(lv_t *env, lv_t *v);
-lv_t *equalp(lv_t *env, lv_t *v);
-lv_t *set_cdr(lv_t *env, lv_t *v);
-lv_t *set_car(lv_t *env, lv_t *v);
-lv_t *inspect(lv_t *env, lv_t *v);
+#include "lisp-types.h"
 
-#endif /* __BUILTINS_H__ */
+#define C(x) #x,
+char *lisp_types_list[] = { LISP_TYPES "l_max" };
+#undef C

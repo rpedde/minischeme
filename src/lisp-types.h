@@ -21,17 +21,22 @@
 #ifndef __LISP_TYPES_H__
 #define __LISP_TYPES_H__
 
-typedef enum lisp_type_t {
-    l_int,
-    l_float,
-    l_bool,
-    l_sym,
-    l_str,
-    l_pair,
-    l_hash,
-    l_null,
-    l_fn
-} lisp_type_t;
+#define LISP_TYPES \
+    C(l_int) \
+    C(l_float) \
+    C(l_bool) \
+    C(l_sym) \
+    C(l_str) \
+    C(l_pair) \
+    C(l_hash) \
+    C(l_null) \
+    C(l_fn)
+
+#define C(x) x,
+typedef enum lisp_type_t { LISP_TYPES l_max } lisp_type_t;
+#undef C
+
+extern char *lisp_types_list[];
 
 typedef enum lisp_exception_t {
     le_arity = 1,      /* wrong arity for function */
@@ -44,7 +49,6 @@ typedef enum lisp_exception_t {
 typedef struct lv_t lv_t;
 
 typedef lv_t *(*lisp_method_t)(lv_t *, lv_t*);
-
 
 #define L_INT(what)     what->value.i.value
 #define L_FLOAT(what)   what->value.f.value
@@ -107,6 +111,10 @@ typedef struct lisp_fn_t {
 
 typedef struct lv_t {
     lisp_type_t type;
+    int col;
+    int row;
+    lv_t *bound;
+    char *file;
     union {
         lisp_int_t i;
         lisp_float_t f;

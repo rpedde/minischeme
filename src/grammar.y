@@ -6,31 +6,38 @@
 #include "tokenizer.h"
 #include "assert.h"
 
+#define STAMP(v) \
+        lisp_stamp_value((v.lisp_value), \
+                         ls->pos->first_line + 1, \
+                         ls->pos->first_column + 1, ls->file)
 }
+
 
 %token_type {lexer_value_t}
 %default_type {lexer_value_t}
-%extra_argument { lv_t **result }
+%extra_argument { lexer_shared_t *ls }
 
 
-program ::= listitems(A).        { *result = A.lisp_value; }
+program ::= listitems(A).        { ls->result = A.lisp_value; }
 
 sexpr(A) ::= atom(B).            { A.lisp_value = B.lisp_value; }
 sexpr(A) ::= list(B).            { A.lisp_value = B.lisp_value; }
 
 list(A) ::= OPENPAREN listitems(B) CLOSEPAREN.{ A.lisp_value = B.lisp_value; }
 list(A) ::= OPENPAREN CLOSEPAREN.             { A.lisp_value =
-                                                lisp_create_null(); }
+                                                lisp_create_null(); STAMP(A); }
 
 listitems(A) ::= sexpr(B).               { A.lisp_value = lisp_create_pair(
-                                           B.lisp_value, NULL); }
+                                           B.lisp_value, NULL); STAMP(A); }
 listitems(A) ::= sexpr(B) listitems(C).  { A.lisp_value = lisp_create_pair(
-                                           B.lisp_value, C.lisp_value); }
+                                           B.lisp_value, C.lisp_value);
+                                           STAMP(A); }
 listitems(A) ::= sexpr(B) DOT sexpr(C).  { A.lisp_value = lisp_create_pair(
-                                           B.lisp_value, C.lisp_value); }
+                                           B.lisp_value, C.lisp_value);
+                                           STAMP(A); }
 
-atom(A) ::= INTEGER(B). { A.lisp_value = lisp_create_int(B.i_value); }
-atom(A) ::= FLOAT(B).   { A.lisp_value = lisp_create_float(B.f_value); }
-atom(A) ::= BOOL(B).    { A.lisp_value = lisp_create_bool(B.i_value); }
-atom(A) ::= SYMBOL(B).  { A.lisp_value = lisp_create_symbol(B.s_value); }
-atom(A) ::= STRING(B).  { A.lisp_value = lisp_create_string(B.s_value); }
+atom(A) ::= INTEGER(B). { A.lisp_value = lisp_create_int(B.i_value); STAMP(A); }
+atom(A) ::= FLOAT(B).   { A.lisp_value = lisp_create_float(B.f_value); STAMP(A); }
+atom(A) ::= BOOL(B).    { A.lisp_value = lisp_create_bool(B.i_value); STAMP(A); }
+atom(A) ::= SYMBOL(B).  { A.lisp_value = lisp_create_symbol(B.s_value); STAMP(A); }
+atom(A) ::= STRING(B).  { A.lisp_value = lisp_create_string(B.s_value); STAMP(A); }

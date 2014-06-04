@@ -10,7 +10,8 @@ TESTS = selfcheck
 check_PROGRAMS = selfcheck
 
 libminischeme_la_SOURCES = tokenizer.l primitives.h primitives.c \
-	murmurhash.h murmurhash.c builtins.h builtins.c grammar.c
+	murmurhash.h murmurhash.c builtins.h builtins.c grammar.c \
+	lisp-types.h lisp-types.c
 
 libminischeme_la_LIBADD = -lgc
 

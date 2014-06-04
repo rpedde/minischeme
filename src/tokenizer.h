@@ -42,6 +42,12 @@ typedef struct yyltype_t {
     int last_column;
 } yyltype_t;
 
+typedef struct lexer_shared_t {
+    lv_t *result;
+    yyltype_t *pos;
+    char *file;
+} lexer_shared_t;
+
 #define YYLTYPE yyltype_t
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern int yylex(YYSTYPE *yyval_param, YYLTYPE *yylloc_param, void *yyscanner);
@@ -50,6 +56,6 @@ extern int yylex_init(void **scanner);
 extern int yylex_destroy (void *scanner);
 
 extern void *ParseAlloc(void *(*mallocProc)(size_t));
-extern void Parse(void *, int, lexer_value_t, lv_t **);
+extern void Parse(void *, int, lexer_value_t, lexer_shared_t *);
 
 #endif /* _TOKENIZER_H_ */

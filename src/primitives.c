@@ -64,6 +64,7 @@ static environment_list_t s_r5_list[] = {
     { "apply", lisp_apply },
     { "set-cdr!", set_cdr },
     { "set-car!", set_car },
+    { "inspect", inspect },
     { NULL, NULL }
 };
 
@@ -225,6 +226,10 @@ lv_t *lisp_create_type(void *value, lisp_type_t type) {
 
     result->type = type;
 
+    result->row = 0;
+    result->col = 0;
+    result->file = NULL;
+
     switch(type) {
     case l_int:
         L_INT(result) = *((int64_t*)value);
@@ -258,6 +263,29 @@ lv_t *lisp_create_type(void *value, lisp_type_t type) {
  */
 lv_t *lisp_create_string(char *value) {
     return lisp_create_type((void*)value, l_str);
+}
+
+/**
+ * typechecked wrapper around lisp_create_type for formatted strings
+ */
+lv_t *lisp_create_formatted_string(char *fmt, ...) {
+    va_list args;
+    char *tmp;
+    lv_t *v;
+    int res;
+
+    va_start(args, fmt);
+    res = vasprintf(&tmp, fmt, args);
+    va_end(args);
+
+    if(res == -1) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
+    }
+
+    v = lisp_create_type((void*)tmp, l_str);
+    free(tmp);
+    return v;
 }
 
 /**
@@ -310,6 +338,15 @@ lv_t *lisp_create_lambda(lv_t *env, lv_t *formals, lv_t *body) {
     L_FN_BODY(fn) = body;
 
     return fn;
+}
+
+/**
+ * stamp row/col/file information on a type
+ */
+void lisp_stamp_value(lv_t *v, int row, int col, char *file) {
+    v->row = row;
+    v->col = col;
+    v->file = file;
 }
 
 /**
@@ -422,11 +459,17 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
             } else if(!strcmp(L_SYM(L_CAR(v)), "define")) {
                 rt_assert(c_list_length(L_CDR(v)) == 2, le_arity,
                           "define arity");
-                return lisp_define(env, L_CADR(v), lisp_eval(env, L_CADDR(v)));
+                result = lisp_eval(env, L_CADDR(v));
+                if(!result->bound)
+                    result->bound = L_CADR(v);
+
+                return lisp_define(env, L_CADR(v), result);
             } else if(!strcmp(L_SYM(L_CAR(v)), "lambda")) {
                 rt_assert(c_list_length(L_CDR(v)) == 2, le_arity,
                           "lambda arity");
-                return lisp_create_lambda(env, L_CADR(v), L_CADDR(v));
+                result = lisp_create_lambda(env, L_CADR(v), L_CADDR(v));
+                lisp_stamp_value(result, v->row, v->col, v->file);
+                return result;
             } else if(!strcmp(L_SYM(L_CAR(v)), "begin")) {
                 rt_assert(L_CADR(v), le_arity, "begin arity");
                 return lisp_begin(env, L_CADR(v));
@@ -590,20 +633,20 @@ lv_t *lisp_parse_string(char *string) {
     YY_BUFFER_STATE buffer;
     void *parser = ParseAlloc(safe_malloc);
     int yv;
-    lv_t *result = NULL;
     void *scanner;
     YYLTYPE yyl;
     YYSTYPE yys;
+    lexer_shared_t lst = { NULL, &yyl, "<stdin>" };
 
     yylex_init(&scanner);
     buffer = yy_scan_string(string, scanner);
 
     while((yv = yylex(&yys, &yyl, scanner)) != 0) {
-        Parse(parser, yv, yys, &result);
+        Parse(parser, yv, yys, &lst);
     }
     yylex_destroy(scanner);
-    Parse(parser, 0, yys, &result);
-    return result;
+    Parse(parser, 0, yys, &lst);
+    return lst.result;
 }
 
 lv_t *lisp_define(lv_t *env, lv_t *sym, lv_t *v) {

@@ -228,3 +228,38 @@ lv_t *set_car(lv_t *env, lv_t *v) {
     L_CAR(L_CAR(v)) = L_CADR(v);
     return lisp_create_null();
 }
+
+lv_t *inspect(lv_t *env, lv_t *v) {
+    lv_t *arg;
+    int show_line = 1;
+    char buffer[256];
+
+    assert(v && (v->type == l_pair));
+    rt_assert(c_list_length(v) == 1, le_arity, "inspect arity");
+
+    arg = L_CAR(v);
+    memset(buffer, 0, sizeof(buffer));
+
+    strcat(buffer, "type: ");
+
+    if(arg->type == l_fn) {
+        if(L_FN(arg)) {
+            strcat(buffer, "built-in function");
+            show_line = 0;
+        } else {
+            strcat(buffer, "lambda, declared at");
+        }
+    } else {
+        strcat(buffer, lisp_types_list[arg->type] + 2);
+    }
+
+    if(show_line)
+        sprintf(buffer + strlen(buffer), " %s:%d:%d",
+                arg->file, arg->row, arg->col);
+
+    if(arg->bound)
+        sprintf(buffer + strlen(buffer), ", bound to: %s",
+                L_SYM(arg->bound));
+
+    return lisp_create_string(buffer);
+}
