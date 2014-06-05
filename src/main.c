@@ -49,8 +49,10 @@ void repl(int level) {
     int quit = 0;
     int line = 1;
     lv_t *parsed_value;
+    lv_t *env_sym;
     lv_t *result;
     lv_t *env = scheme_report_environment(NULL, NULL);
+    char sym_buf[20];
 
     c_set_top_context(&jb);
 
@@ -84,6 +86,12 @@ void repl(int level) {
 
         // p!
         if(result && !is_nil(result)) {
+            sprintf(sym_buf, "$%d", line);
+            env_sym = lisp_create_symbol(sym_buf);
+            c_hash_insert(L_CAR(env), env_sym, result);
+
+            dprintf(1, "%s = ", sym_buf);
+
             lisp_dump_value(1, result, 0);
             printf("\n");
         }
