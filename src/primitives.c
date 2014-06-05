@@ -644,8 +644,9 @@ lv_t *lisp_parse_file(char *file) {
     int yv;
     void *scanner;
     YYLTYPE yyl = {0, 0, 0, 0};
+    YYLTYPE yyl_error;
     YYSTYPE yys;
-    lexer_shared_t lst = { NULL, &yyl, file };
+    lexer_shared_t lst = { NULL, &yyl, file, &yyl_error, 0 };
     FILE *f;
 
     f = fopen(file, "r");
@@ -662,6 +663,10 @@ lv_t *lisp_parse_file(char *file) {
     yylex_destroy(scanner);
 
     fclose(f);
+
+    if(lst.error) {
+        c_rt_assert(le_syntax, "syntax error");
+    }
     return lst.result;
 }
 
@@ -673,9 +678,10 @@ lv_t *lisp_parse_string(char *string) {
     void *parser = ParseAlloc(safe_malloc);
     int yv;
     void *scanner;
-    YYLTYPE yyl = {0, 0, 0, 0};
+    YYLTYPE yyl = {0, 0, 0, 0 };
     YYSTYPE yys;
-    lexer_shared_t lst = { NULL, &yyl, "<stdin>" };
+    YYLTYPE yyl_error;
+    lexer_shared_t lst = { NULL, &yyl, "<stdin>", &yyl_error, 0 };
 
     yylex_init(&scanner);
     buffer = yy_scan_string(string, scanner);
@@ -687,6 +693,9 @@ lv_t *lisp_parse_string(char *string) {
     Parse(parser, 0, yys, &lst);
     yylex_destroy(scanner);
 
+    if(lst.error) {
+        c_rt_assert(le_syntax, "syntax error");
+    }
     return lst.result;
 }
 

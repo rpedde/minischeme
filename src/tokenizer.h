@@ -46,6 +46,8 @@ typedef struct lexer_shared_t {
     lv_t *result;
     yyltype_t *pos;
     char *file;
+    yyltype_t *error_pos;
+    int error;
 } lexer_shared_t;
 
 #define YYLTYPE yyltype_t

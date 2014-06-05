@@ -42,7 +42,8 @@ typedef enum lisp_exception_t {
     le_arity = 1,      /* wrong arity for function */
     le_type,           /* wrong type for operation */
     le_lookup,         /* could not bind -- not in environment */
-    le_internal        /* internal error (malloc?) */
+    le_internal,       /* internal error (malloc?) */
+    le_syntax          /* parse error */
 } lisp_exception_t;
 
 

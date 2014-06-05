@@ -1,5 +1,6 @@
 %include {
 #include <stdint.h>
+#include <string.h>
 
 #include "lisp-types.h"
 #include "primitives.h"
@@ -16,6 +17,10 @@
 %token_type {lexer_value_t}
 %default_type {lexer_value_t}
 %extra_argument { lexer_shared_t *ls }
+%syntax_error {
+    ls->error = 1;
+    memcpy(ls->error_pos, ls->pos, sizeof(yyltype_t));
+}
 
 
 program ::= listitems(A).        { ls->result = A.lisp_value; }
