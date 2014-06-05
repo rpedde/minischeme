@@ -25,6 +25,7 @@
 
 program ::= listitems(A).        { ls->result = A.lisp_value; }
 
+sexpr(A) ::= QUOTE sexpr(B).     { A.lisp_value = lisp_wrap_type("quote", B.lisp_value); }
 sexpr(A) ::= atom(B).            { A.lisp_value = B.lisp_value; }
 sexpr(A) ::= list(B).            { A.lisp_value = B.lisp_value; }
 

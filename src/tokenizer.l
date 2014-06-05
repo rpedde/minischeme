@@ -54,7 +54,7 @@ symbol [^\t\r\n \)\(]*
 \)                             { return(CLOSEPAREN); }
 
 \.                             { return(DOT); }
-
+'                              { return(QUOTE); }
 \.[0-9]+                       { yylval->f_value = atof(yytext); return(FLOAT); }
 [0-9]+\.[0-9]*                 { yylval->f_value = atof(yytext); return(FLOAT); }
 

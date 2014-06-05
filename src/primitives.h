@@ -48,6 +48,7 @@ extern lv_t *lisp_create_native_fn(lisp_method_t value);
 extern lv_t *lisp_create_lambda(lv_t *env, lv_t *formals, lv_t *body);
 extern lv_t *lisp_create_formatted_string(char *fmt, ...)
     __attribute__((format (printf, 1, 2)));
+extern lv_t *lisp_wrap_type(char *symv, lv_t *v);
 
 /**
  * misc utilities

@@ -801,3 +801,12 @@ lv_t *c_sequential_eval(lv_t *env, lv_t *v) {
 
     return result;
 }
+
+/**
+ * wrap a lisp value in a symbol (quote, dequote, etc)
+ */
+lv_t *lisp_wrap_type(char *symv, lv_t *v) {
+    lv_t *cdr = lisp_create_pair(v, NULL);
+    lv_t *car = lisp_create_pair(lisp_create_symbol(symv), cdr);
+    return car;
+}
