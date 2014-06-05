@@ -333,6 +333,9 @@ lv_t *lisp_create_native_fn(lisp_method_t value) {
  * lambda-style function, not builtin
  */
 lv_t *lisp_create_lambda(lv_t *env, lv_t *formals, lv_t *body) {
+    rt_assert(formals->type == l_pair || formals->type == l_null, le_type,
+              "formals must be a list");
+
     lv_t *fn = lisp_create_type(NULL, l_fn);
     L_FN_ENV(fn) = env;
     L_FN_ARGS(fn) = formals;
@@ -530,7 +533,11 @@ int c_list_length(lv_t *v) {
     lv_t *current = v;
     int count = 0;
 
-    assert(v->type == l_pair);
+    assert(v->type == l_pair || v->type == l_null);
+
+    if(v->type == l_null)
+        return 0;
+
     while(current) {
         count++;
         current = L_CDR(current);
