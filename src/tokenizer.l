@@ -32,6 +32,9 @@
     yylloc->first_column = yycolumn; yylloc->last_column = yycolumn+yyleng-1; \
     yycolumn += yyleng;
 
+#define YY_USER_INIT yycolumn = 0;
+
+
 %}
 
 %option yylineno
@@ -46,7 +49,7 @@ symbol [^\t\r\n \)\(]*
 [\t ]+
 \r
 ;.*\n
-
+\n
 \(                             { return(OPENPAREN); }
 \)                             { return(CLOSEPAREN); }
 

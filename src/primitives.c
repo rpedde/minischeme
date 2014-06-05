@@ -65,6 +65,7 @@ static environment_list_t s_r5_list[] = {
     { "set-cdr!", set_cdr },
     { "set-car!", set_car },
     { "inspect", inspect },
+    { "load", load },
     { NULL, NULL }
 };
 
@@ -626,6 +627,37 @@ lv_t *numeric_promote(lv_t *v, lisp_type_t type) {
     return lisp_create_float((float)L_INT(v));
 }
 
+
+/**
+ * given a file, return an ast
+ */
+lv_t *lisp_parse_file(char *file) {
+    void *parser = ParseAlloc(safe_malloc);
+    YY_BUFFER_STATE buffer;
+    int yv;
+    void *scanner;
+    YYLTYPE yyl = {0, 0, 0, 0};
+    YYSTYPE yys;
+    lexer_shared_t lst = { NULL, &yyl, file };
+    FILE *f;
+
+    f = fopen(file, "r");
+
+    yylex_init(&scanner);
+    buffer = yy_create_buffer(f, 16384, scanner);
+    yy_switch_to_buffer(buffer, scanner);
+
+    while((yv = yylex(&yys, &yyl, scanner)) != 0) {
+        Parse(parser, yv, yys, &lst);
+    }
+
+    Parse(parser, 0, yys, &lst);
+    yylex_destroy(scanner);
+
+    fclose(f);
+    return lst.result;
+}
+
 /**
  * given a string, return an ast
  */
@@ -634,7 +666,7 @@ lv_t *lisp_parse_string(char *string) {
     void *parser = ParseAlloc(safe_malloc);
     int yv;
     void *scanner;
-    YYLTYPE yyl;
+    YYLTYPE yyl = {0, 0, 0, 0};
     YYSTYPE yys;
     lexer_shared_t lst = { NULL, &yyl, "<stdin>" };
 
@@ -644,8 +676,10 @@ lv_t *lisp_parse_string(char *string) {
     while((yv = yylex(&yys, &yyl, scanner)) != 0) {
         Parse(parser, yv, yys, &lst);
     }
-    yylex_destroy(scanner);
+
     Parse(parser, 0, yys, &lst);
+    yylex_destroy(scanner);
+
     return lst.result;
 }
 

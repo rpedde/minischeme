@@ -263,3 +263,11 @@ lv_t *inspect(lv_t *env, lv_t *v) {
 
     return lisp_create_string(buffer);
 }
+
+lv_t *load(lv_t *env, lv_t *v) {
+    assert(v && (v->type == l_pair));
+    rt_assert(c_list_length(v) == 1, le_arity, "load arity");
+    rt_assert(L_CAR(v)->type == l_str, le_type, "filename must be string");
+
+    return c_sequential_eval(env, lisp_parse_file(L_STR(L_CAR(v))));
+}
