@@ -548,6 +548,16 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
                     le_arity,
                     "quasiquote arity");
                 return lisp_quasiquote(env, L_CADR(v));
+            } else if(!strcmp(L_SYM(L_CAR(v)), "if")) {
+                rt_assert(c_list_length(L_CDR(v)) == 3, le_arity,
+                          "if arity");
+                lv_t *expr = lisp_eval(env, L_CADR(v));
+                lv_t *t = L_CADDR(v);
+                lv_t *f = L_CADDDR(v);
+
+                if(expr->type == l_bool && L_BOOL(expr) == 0)
+                    return lisp_eval(env, f);
+                return lisp_eval(env, t);
             }
 	}
 
