@@ -436,6 +436,70 @@ lv_t *lisp_exec_fn(lv_t *env, lv_t *fn, lv_t *args) {
 
 
 /**
+ * quasiquote a term
+ */
+lv_t *lisp_quasiquote(lv_t *env, lv_t *v) {
+    lv_t *res;
+    lv_t *vptr;
+    lv_t *rptr;
+    lv_t *v2, *v2ptr;
+
+    /* strategy: walk through the list, expanding
+       unquote and unquote-splicing terms */
+    if(v->type == l_pair) {
+        if (L_CAR(v)->type == l_sym &&
+            !strcmp(L_SYM(L_CAR(v)), "unquote")) {
+            rt_assert(c_list_length(L_CDR(v)) == 1, le_arity,
+                      "unquote arity");
+            return lisp_eval(env, L_CADR(v));
+        }
+
+        /* quasi-quote and unquote-splice stuff */
+        res = lisp_create_pair(NULL, NULL);
+        rptr = res;
+        vptr = v;
+        while(vptr && L_CAR(vptr)) {
+            if(L_CAR(vptr)->type == l_pair &&
+               L_CAAR(vptr)->type == l_sym &&
+               !strcmp(L_SYM(L_CAAR(vptr)), "unquote-splicing")) {
+                /* splice this into result */
+                rt_assert(c_list_length(L_CDAR(vptr)) == 1, le_arity,
+                          "unquote-splicing arity");
+
+                v2 = lisp_eval(env, L_CAR(L_CDAR(vptr)));
+                rt_assert(v2->type == l_pair || v2->type == l_null, le_type,
+                          "unquote-splicing expects list");
+
+                if(v2->type != l_null) {
+                    v2ptr = v2;
+                    while(v2ptr && L_CAR(v2ptr)) {
+                        L_CAR(rptr) = L_CAR(v2ptr);
+                        v2ptr = L_CDR(v2ptr);
+                        if(v2ptr) {
+                            L_CDR(rptr) = lisp_create_pair(NULL, NULL);
+                            rptr = L_CDR(rptr);
+                        }
+                    }
+                }
+            } else {
+                L_CAR(rptr) = lisp_quasiquote(env, L_CAR(vptr));
+            }
+
+            vptr = L_CDR(vptr);
+            if(vptr) {
+                L_CDR(rptr) = lisp_create_pair(NULL, NULL);
+                rptr = L_CDR(rptr);
+            }
+        }
+
+        return res;
+    } else {
+        return v;
+    }
+}
+
+
+/**
  * evaluate a lisp value
  */
 lv_t *lisp_eval(lv_t *env, lv_t *v) {
@@ -477,6 +541,13 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
             } else if(!strcmp(L_SYM(L_CAR(v)), "begin")) {
                 rt_assert(L_CADR(v), le_arity, "begin arity");
                 return lisp_begin(env, L_CADR(v));
+            } else if(!strcmp(L_SYM(L_CAR(v)), "quasiquote")) {
+                rt_assert(
+                    L_CDR(v)->type == l_null ||
+                    (L_CDR(v)->type == l_pair && c_list_length(L_CDR(v)) == 1),
+                    le_arity,
+                    "quasiquote arity");
+                return lisp_quasiquote(env, L_CADR(v));
             }
 	}
 

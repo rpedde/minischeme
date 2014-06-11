@@ -23,9 +23,13 @@
 }
 
 
-program ::= listitems(A).        { ls->result = A.lisp_value; }
+program ::= listitems(A).              { ls->result = A.lisp_value; }
 
-sexpr(A) ::= QUOTE sexpr(B).     { A.lisp_value = lisp_wrap_type("quote", B.lisp_value); }
+sexpr(A) ::= QUOTE sexpr(B).           { A.lisp_value = lisp_wrap_type("quote", B.lisp_value); }
+sexpr(A) ::= QUASIQUOTE sexpr(B).      { A.lisp_value = lisp_wrap_type("quasiquote", B.lisp_value); }
+sexpr(A) ::= UNQUOTESPLICING sexpr(B). { A.lisp_value = lisp_wrap_type("unquote-splicing", B.lisp_value); }
+sexpr(A) ::= UNQUOTE sexpr(B).         { A.lisp_value = lisp_wrap_type("unquote", B.lisp_value); }
+
 sexpr(A) ::= atom(B).            { A.lisp_value = B.lisp_value; }
 sexpr(A) ::= list(B).            { A.lisp_value = B.lisp_value; }
 

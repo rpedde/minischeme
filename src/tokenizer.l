@@ -43,7 +43,7 @@
 %option bison-locations
 
 qstring \"[^\"\n]*[\"\n]
-symbol [^\t\r\n \)\(]*
+symbol [^\t\r\n \)\(,`']*
 
 %%
 [\t ]+
@@ -55,6 +55,10 @@ symbol [^\t\r\n \)\(]*
 
 \.                             { return(DOT); }
 '                              { return(QUOTE); }
+,@                             { return(UNQUOTESPLICING); }
+,                              { return(UNQUOTE); }
+`                              { return(QUASIQUOTE); }
+
 \.[0-9]+                       { yylval->f_value = atof(yytext); return(FLOAT); }
 [0-9]+\.[0-9]*                 { yylval->f_value = atof(yytext); return(FLOAT); }
 
