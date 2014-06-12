@@ -271,3 +271,10 @@ lv_t *load(lv_t *env, lv_t *v) {
 
     return c_sequential_eval(env, lisp_parse_file(L_STR(L_CAR(v))));
 }
+
+lv_t *length(lv_t *env, lv_t *v) {
+    assert(v && v->type == l_pair);
+
+    rt_assert(c_list_length(v) == 1, le_arity, "length arity");
+    return lisp_create_int(c_list_length(L_CAR(v)));
+}

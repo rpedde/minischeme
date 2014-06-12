@@ -33,5 +33,6 @@ extern lv_t *set_cdr(lv_t *env, lv_t *v);
 extern lv_t *set_car(lv_t *env, lv_t *v);
 extern lv_t *inspect(lv_t *env, lv_t *v);
 extern lv_t *load(lv_t *env, lv_t *v);
+extern lv_t *length(lv_t *env, lv_t *v);
 
 #endif /* __BUILTINS_H__ */

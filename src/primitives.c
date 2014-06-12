@@ -66,6 +66,7 @@ static environment_list_t s_r5_list[] = {
     { "set-car!", set_car },
     { "inspect", inspect },
     { "load", load },
+    { "length", length },
     { NULL, NULL }
 };
 
@@ -404,10 +405,36 @@ void lisp_dump_value(int fd, lv_t *v, int level) {
     }
 }
 
+lv_t *lisp_args_overlay(lv_t *formals, lv_t *args) {
+    lv_t *pf, *pa;
+    lv_t *env_layer;
+
+    assert(formals->type == l_pair);
+    assert(args->type == l_pair);
+
+    env_layer = lisp_create_hash();
+    pf = formals;
+    pa = args;
+
+    while(pf && L_CAR(pf)) {
+        if(L_CAR(pf)->type == l_sym &&
+           !strcmp(L_SYM(L_CAR(pf)), "&rest")) {
+            /* assign the rest to a list and done! */
+            c_hash_insert(env_layer, L_CADR(pf), lisp_copy_list(pa));
+            return env_layer;
+        }
+        rt_assert(pa && L_CAR(pa), le_arity, "arity");
+        c_hash_insert(env_layer, L_CAR(pf), L_CAR(pa));
+        pf = L_CDR(pf);
+        pa = L_CDR(pa);
+    }
+
+    return env_layer;
+}
+
 lv_t *lisp_exec_fn(lv_t *env, lv_t *fn, lv_t *args) {
     lv_t *parsed_args;
-    lv_t *env_layer;
-    lv_t *aptr, *fptr;
+    lv_t *newenv;
 
     assert(env && fn && args);
     rt_assert(fn->type == l_fn, le_type, "not a function");
@@ -417,21 +444,9 @@ lv_t *lisp_exec_fn(lv_t *env, lv_t *fn, lv_t *args) {
         return L_FN(fn)(env, args);
     }
 
-    rt_assert(c_list_length(args) == c_list_length(L_FN_ARGS(fn)),
-              le_arity, "arity");
+    newenv = lisp_args_overlay(L_FN_ARGS(fn), args);
 
-    env_layer = lisp_create_hash();
-
-    aptr = args;
-    fptr = L_FN_ARGS(fn);
-
-    while(fptr && L_CAR(fptr)) {
-        c_hash_insert(env_layer, L_CAR(fptr), L_CAR(aptr));
-        aptr = L_CDR(aptr);
-        fptr = L_CDR(fptr);
-    }
-
-    return lisp_eval(lisp_create_pair(env_layer, L_FN_ENV(fn)), L_FN_BODY(fn));
+    return lisp_eval(lisp_create_pair(newenv, L_FN_ENV(fn)), L_FN_BODY(fn));
 }
 
 
@@ -890,4 +905,29 @@ lv_t *lisp_wrap_type(char *symv, lv_t *v) {
     lv_t *cdr = lisp_create_pair(v, NULL);
     lv_t *car = lisp_create_pair(lisp_create_symbol(symv), cdr);
     return car;
+}
+
+/**
+ * copy a list to a new list
+ */
+lv_t *lisp_copy_list(lv_t *v) {
+    lv_t *vptr = v;
+    lv_t *result = lisp_create_pair(NULL, NULL);
+    lv_t *rptr = result;
+
+    if(v->type == l_null)
+        return v;
+
+    assert(v->type == l_pair);
+
+    while(vptr && L_CAR(vptr)) {
+        L_CAR(rptr) = L_CAR(vptr);
+        vptr = L_CDR(vptr);
+        if(vptr) {
+            L_CDR(rptr) = lisp_create_pair(NULL, NULL);
+            rptr = L_CDR(rptr);
+        }
+    }
+
+    return result;
 }
