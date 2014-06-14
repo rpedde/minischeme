@@ -86,11 +86,12 @@ extern lv_t *c_sequential_eval(lv_t *env, lv_t *v);
 
 
 /**
- * special forms
+ * special form helpers
  */
 extern lv_t *lisp_quote(lv_t *env, lv_t *v);
 extern lv_t *lisp_define(lv_t *env, lv_t *sym, lv_t *v);
 extern lv_t *lisp_quasiquote(lv_t *env, lv_t *v);
+extern lv_t *lisp_let(lv_t *env, lv_t *args, lv_t *expr);
 
 /**
  * runtime asserts

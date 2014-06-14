@@ -69,6 +69,7 @@ typedef lv_t *(*lisp_method_t)(lv_t *, lv_t*);
 #define L_CAAR(what)    L_CAR(L_CAR(what))
 #define L_CDAR(what)    L_CDR(L_CAR(what))
 #define L_CDDR(what)    L_CDR(L_CDR(what))
+#define L_CADAR(what)   L_CAR(L_CDR(L_CAR(what)))
 #define L_CADDDR(what)  L_CAR(L_CDR(L_CDR(L_CDR(what))))
 #define L_CADDR(what)   L_CAR(L_CDR(L_CDR(what)))
 
