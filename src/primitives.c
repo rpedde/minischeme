@@ -478,6 +478,31 @@ lv_t *lisp_let(lv_t *env, lv_t *args, lv_t *expr) {
     return lisp_eval(lisp_create_pair(newenv, env), expr);
 }
 
+lv_t *lisp_let_star(lv_t *env, lv_t *args, lv_t *expr) {
+    lv_t *argp = args;
+    lv_t *newenv;
+
+    newenv = lisp_create_pair(lisp_create_hash(), env);
+
+    rt_assert(args->type == l_null ||
+              args->type == l_pair, le_type,
+              "let arg type");
+
+    if(args->type == l_pair) {
+        /* walk through each element of the list,
+           evaling k/v pairs and assigning them
+           to an environment to run the expr in */
+        while(argp && L_CAR(argp)) {
+            rt_assert(c_list_length(L_CAR(argp)) == 2, le_arity,
+                      "let arg arity");
+            c_hash_insert(L_CAR(newenv), L_CAAR(argp),
+                          lisp_eval(newenv, L_CADAR(argp)));
+            argp=L_CDR(argp);
+        }
+    }
+
+    return lisp_eval(newenv, expr);
+}
 
 /**
  * quasiquote a term
@@ -610,6 +635,13 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
                 a2 = L_CADDR(v);                 // eval under let
 
                 return lisp_let(env, a1, a2);
+            } else if(!strcmp(L_SYM(L_CAR(v)), "let*")) {
+                rt_assert(c_list_length(L_CDR(v)) == 2, le_arity,
+                          "let arity");
+                a1 = L_CADR(v);                  // tuple assignment list
+                a2 = L_CADDR(v);                 // eval under let
+
+                return lisp_let_star(env, a1, a2);
             }
 	}
 
