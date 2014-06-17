@@ -46,6 +46,11 @@ typedef enum lisp_exception_t {
     le_syntax          /* parse error */
 } lisp_exception_t;
 
+typedef enum lisp_funtype_t {
+    lf_native,
+    lf_lambda,
+    lf_macro
+} lisp_funtype_t;
 
 typedef struct lv_t lv_t;
 
@@ -61,6 +66,7 @@ typedef lv_t *(*lisp_method_t)(lv_t *, lv_t*);
 #define L_HASH(what)    what->value.h.value
 
 #define L_FN(what)      what->value.l.fn
+#define L_FN_FTYPE(what) what->value.l.ftype
 #define L_FN_ARGS(what) what->value.l.formals
 #define L_FN_BODY(what) what->value.l.body
 #define L_FN_ENV(what)  what->value.l.env
@@ -108,6 +114,7 @@ typedef struct lisp_null_t {
 
 typedef struct lisp_fn_t {
     lisp_method_t fn;
+    lisp_funtype_t ftype;
     lv_t *formals;
     lv_t *body;
     lv_t *env;

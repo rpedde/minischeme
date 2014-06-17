@@ -323,12 +323,31 @@ lv_t *lisp_create_bool(int value) {
  */
 lv_t *lisp_create_native_fn(lisp_method_t value) {
     lv_t *fn = lisp_create_type(value, l_fn);
+    L_FN_FTYPE(fn) = lf_native;
     L_FN_ARGS(fn) = NULL;
     L_FN_BODY(fn) = NULL;
     L_FN_ENV(fn) = NULL;
 
     return fn;
 }
+
+
+/**
+ * defmacro
+ */
+lv_t *lisp_create_macro(lv_t *env, lv_t *formals, lv_t *form) {
+    rt_assert(formals->type == l_pair || formals->type == l_null, le_type,
+              "formals must be a list");
+
+    lv_t *fn = lisp_create_type(NULL, l_fn);
+    L_FN_FTYPE(fn) = lf_macro;
+    L_FN_ENV(fn) = env;
+    L_FN_ARGS(fn) = formals;
+    L_FN_BODY(fn) = form;
+
+    return fn;
+}
+
 
 /**
  * lambda-style function, not builtin
@@ -338,6 +357,7 @@ lv_t *lisp_create_lambda(lv_t *env, lv_t *formals, lv_t *body) {
               "formals must be a list");
 
     lv_t *fn = lisp_create_type(NULL, l_fn);
+    L_FN_FTYPE(fn) = lf_lambda;
     L_FN_ENV(fn) = env;
     L_FN_ARGS(fn) = formals;
     L_FN_BODY(fn) = body;
@@ -434,19 +454,29 @@ lv_t *lisp_args_overlay(lv_t *formals, lv_t *args) {
 
 lv_t *lisp_exec_fn(lv_t *env, lv_t *fn, lv_t *args) {
     lv_t *parsed_args;
-    lv_t *newenv;
+    lv_t *layer, *newenv;
+    lv_t *macrofn;
 
     assert(env && fn && args);
     rt_assert(fn->type == l_fn, le_type, "not a function");
 
-    if(L_FN(fn) != NULL) {
-        /* is a native (builtin) function */
+    switch(L_FN_FTYPE(fn)) {
+    case lf_native:
         return L_FN(fn)(env, args);
+    case lf_lambda:
+        layer = lisp_args_overlay(L_FN_ARGS(fn), args);
+        newenv = lisp_create_pair(layer, L_FN_ENV(fn));
+        return lisp_eval(newenv, L_FN_BODY(fn));
+    case lf_macro:
+        layer = lisp_args_overlay(L_FN_ARGS(fn), args);
+        newenv = lisp_create_pair(layer, L_FN_ENV(fn));
+        macrofn = lisp_eval(newenv, L_FN_BODY(fn));
+        return lisp_eval(newenv, macrofn);
+    default:
+        assert(0);
     }
 
-    newenv = lisp_args_overlay(L_FN_ARGS(fn), args);
-
-    return lisp_eval(lisp_create_pair(newenv, L_FN_ENV(fn)), L_FN_BODY(fn));
+    return NULL;
 }
 
 /**
@@ -608,6 +638,17 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
                 result = lisp_create_lambda(env, L_CADR(v), L_CADDR(v));
                 lisp_stamp_value(result, v->row, v->col, v->file);
                 return result;
+            } else if(!strcmp(L_SYM(L_CAR(v)), "defmacro")) {
+                rt_assert(c_list_length(L_CDR(v)) == 3, le_arity,
+                          "defmacro arity");
+                a1 = L_CADR(v);                  // name
+                a2 = L_CADDR(v);                 // lambda-list/formals
+                a3 = L_CADDDR(v);                // form
+
+                rt_assert(a1->type == l_sym, le_type,
+                          "defmacro wrong type for name");
+
+                return lisp_define(env, a1, lisp_create_macro(env, a2, a3));
             } else if(!strcmp(L_SYM(L_CAR(v)), "begin")) {
                 rt_assert(L_CADR(v), le_arity, "begin arity");
                 return lisp_begin(env, L_CADR(v));
