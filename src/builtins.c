@@ -125,18 +125,13 @@ int c_equalp(lv_t *a1, lv_t *a2) {
         break;
     case l_pair:
         /* this is perhaps not right */
-        if(c_list_length(a1) == c_list_length(a2)) {
-            lv_t *p1, *p2;
-            p1 = a1;
-            p2 = a2;
-            while(p1) {
-                if(!c_equalp(L_CAR(p1), L_CAR(p2)))
-                    return 0;
-                p1 = L_CDR(p1);
-                p2 = L_CDR(p2);
-            }
-            result = 1;
-        }
+        if(!(c_equalp(L_CAR(a1), L_CAR(a2))))
+            return 0;
+        if(L_CDR(a1) && L_CDR(a2))
+            return c_equalp(L_CDR(a1), L_CDR(a2));
+        if(!L_CDR(a1) && !L_CDR(a2))
+            return 1;
+        result = 0;
         break;
     }
 
@@ -307,4 +302,37 @@ lv_t *p_not(lv_t *env, lv_t *v) {
     rt_assert(L_CAR(v)->type == l_bool, le_type, "not bool");
 
     return lisp_create_bool(!(L_BOOL(L_CAR(v))));
+}
+
+lv_t *p_car(lv_t *env, lv_t *v) {
+    assert(v && v->type == l_pair);
+
+    rt_assert(c_list_length(v) == 1, le_arity, "car arity");
+    rt_assert(v->type == l_pair || v->type == l_null, le_type,
+              "car on non-list");
+
+    if(L_CAR(v)->type == l_null)
+        return v;
+
+    return L_CAAR(v);
+}
+
+lv_t *p_cdr(lv_t *env, lv_t *v) {
+    assert(v && v->type == l_pair);
+
+    rt_assert(c_list_length(v) == 1, le_arity, "car arity");
+    rt_assert(v->type == l_pair || v->type == l_null, le_type,
+              "car on non-list");
+
+    if(L_CAR(v)->type == l_null || L_CDAR(v) == NULL)
+        return lisp_create_null();
+
+    return L_CDAR(v);
+}
+
+lv_t *p_cons(lv_t *env, lv_t *v) {
+    assert(v && v->type == l_pair);
+
+    rt_assert(c_list_length(v) == 2, le_arity, "cons arity");
+    return lisp_create_pair(L_CAR(v), L_CADR(v));
 }

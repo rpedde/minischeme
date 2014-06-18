@@ -37,5 +37,8 @@ extern lv_t *p_length(lv_t *env, lv_t *v);
 extern lv_t *p_assert(lv_t *env, lv_t *v);
 extern lv_t *p_warn(lv_t *env, lv_t *v);
 extern lv_t *p_not(lv_t *env, lv_t *v);
+extern lv_t *p_car(lv_t *env, lv_t *v);
+extern lv_t *p_cdr(lv_t *env, lv_t *v);
+extern lv_t *p_cons(lv_t *env, lv_t *v);
 
 #endif /* __BUILTINS_H__ */

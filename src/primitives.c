@@ -70,6 +70,9 @@ static environment_list_t s_r5_list[] = {
     { "assert", p_assert },
     { "warn", p_warn },
     { "not", p_not },
+    { "cons", p_cons },
+    { "car", p_car },
+    { "cdr", p_cdr },
     { NULL, NULL }
 };
 
