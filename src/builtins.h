@@ -21,19 +21,19 @@
 #ifndef __BUILTINS_H__
 #define __BUILTINS_H__
 
-extern lv_t *nullp(lv_t *env, lv_t *v);
-extern lv_t *symbolp(lv_t *env, lv_t *v);
-extern lv_t *atomp(lv_t *env, lv_t *v);
-extern lv_t *consp(lv_t *env, lv_t *v);
-extern lv_t *listp(lv_t *env, lv_t *v);
-extern lv_t *pairp(lv_t *env, lv_t *v);
-extern lv_t *plus(lv_t *env, lv_t *v);
-extern lv_t *equalp(lv_t *env, lv_t *v);
-extern lv_t *set_cdr(lv_t *env, lv_t *v);
-extern lv_t *set_car(lv_t *env, lv_t *v);
-extern lv_t *inspect(lv_t *env, lv_t *v);
-extern lv_t *load(lv_t *env, lv_t *v);
-extern lv_t *length(lv_t *env, lv_t *v);
+extern lv_t *p_nullp(lv_t *env, lv_t *v);
+extern lv_t *p_symbolp(lv_t *env, lv_t *v);
+extern lv_t *p_atomp(lv_t *env, lv_t *v);
+extern lv_t *p_consp(lv_t *env, lv_t *v);
+extern lv_t *p_listp(lv_t *env, lv_t *v);
+extern lv_t *p_pairp(lv_t *env, lv_t *v);
+extern lv_t *p_plus(lv_t *env, lv_t *v);
+extern lv_t *p_equalp(lv_t *env, lv_t *v);
+extern lv_t *p_set_cdr(lv_t *env, lv_t *v);
+extern lv_t *p_set_car(lv_t *env, lv_t *v);
+extern lv_t *p_inspect(lv_t *env, lv_t *v);
+extern lv_t *p_load(lv_t *env, lv_t *v);
+extern lv_t *p_length(lv_t *env, lv_t *v);
 extern lv_t *p_assert(lv_t *env, lv_t *v);
 extern lv_t *p_warn(lv_t *env, lv_t *v);
 extern lv_t *p_not(lv_t *env, lv_t *v);

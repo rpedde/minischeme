@@ -61,7 +61,7 @@ int test_environment(void *scaffold) {
     assert(fn == fn2);
 
     /* make sure it actually points to the right thing */
-    assert(L_FN(fn) == nullp);
+    assert(L_FN(fn) == p_nullp);
 
     return 1;
 }
