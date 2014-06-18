@@ -308,11 +308,10 @@ lv_t *p_car(lv_t *env, lv_t *v) {
     assert(v && v->type == l_pair);
 
     rt_assert(c_list_length(v) == 1, le_arity, "car arity");
-    rt_assert(v->type == l_pair || v->type == l_null, le_type,
-              "car on non-list");
+    rt_assert(L_CAR(v)->type == l_pair, le_type, "car on non-list");
 
-    if(L_CAR(v)->type == l_null)
-        return v;
+    if(L_CAAR(v)->type == l_null)
+        return lisp_create_null();
 
     return L_CAAR(v);
 }
@@ -320,11 +319,10 @@ lv_t *p_car(lv_t *env, lv_t *v) {
 lv_t *p_cdr(lv_t *env, lv_t *v) {
     assert(v && v->type == l_pair);
 
-    rt_assert(c_list_length(v) == 1, le_arity, "car arity");
-    rt_assert(v->type == l_pair || v->type == l_null, le_type,
-              "car on non-list");
+    rt_assert(c_list_length(v) == 1, le_arity, "cdr arity");
+    rt_assert(L_CAR(v)->type == l_pair, le_type, "cdr on non-list");
 
-    if(L_CAR(v)->type == l_null || L_CDAR(v) == NULL)
+    if(L_CDAR(v) == NULL)
         return lisp_create_null();
 
     return L_CDAR(v);
