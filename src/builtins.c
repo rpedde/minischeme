@@ -278,3 +278,33 @@ lv_t *length(lv_t *env, lv_t *v) {
     rt_assert(c_list_length(v) == 1, le_arity, "length arity");
     return lisp_create_int(c_list_length(L_CAR(v)));
 }
+
+lv_t *p_assert(lv_t *env, lv_t *v) {
+    assert(v && v->type == l_pair);
+    rt_assert(c_list_length(v) == 1, le_arity, "assert arity");
+    rt_assert(L_CAR(v)->type == l_bool, le_type, "assert not bool");
+
+    if(!L_BOOL(L_CAR(v)))
+        rt_assert(0, le_internal, "error raised");
+
+    return lisp_create_null();
+}
+
+lv_t *p_warn(lv_t *env, lv_t *v) {
+    assert(v && v->type == l_pair);
+    rt_assert(c_list_length(v) == 1, le_arity, "warn arity");
+    rt_assert(L_CAR(v)->type == l_bool, le_type, "warn not bool");
+
+    if(!L_BOOL(L_CAR(v)))
+        rt_assert(0, le_warn, "warning raised");
+
+    return lisp_create_null();
+}
+
+lv_t *p_not(lv_t *env, lv_t *v) {
+    assert(v && v->type == l_pair);
+    rt_assert(c_list_length(v) == 1, le_arity, "not arity");
+    rt_assert(L_CAR(v)->type == l_bool, le_type, "not bool");
+
+    return lisp_create_bool(!(L_BOOL(L_CAR(v))));
+}

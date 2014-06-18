@@ -69,6 +69,7 @@ extern lv_t *c_hash_fetch(lv_t *hash, lv_t *key);
 extern int c_hash_delete(lv_t *hash, lv_t *key);
 extern int c_hash_insert(lv_t *hash, lv_t *key, lv_t *value);
 extern lv_t *c_env_lookup(lv_t *env, lv_t *key);
+extern void c_hash_walk(lv_t *hash, void(*callback)(lv_t *key, lv_t *value));
 
 /**
  * inspection utilities

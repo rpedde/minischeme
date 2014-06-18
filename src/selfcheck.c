@@ -2,9 +2,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <setjmp.h>
+#include <dirent.h>
+
+#include "lisp-types.h"
+#include "primitives.h"
 
 #define COLOR_RED    "\x1b[31m"
 #define COLOR_GREEN  "\x1b[32m"
+#define COLOR_YELLOW "\x1b[33m"
 #define COLOR_RESET  "\x1b[0m"
 
 #define MAX(a, b) (a) > (b) ? (a) : (b)
@@ -34,7 +41,8 @@ typedef struct test_t {
 test_t test_list[] = { TESTS { NULL, NULL }};
 #undef C
 
-typedef enum color_t { red, green, none } color_t;
+typedef enum color_t { red, green, yellow, none } color_t;
+typedef enum result_t { SUCCESS, FAIL, SKIP, WARN } result_t;
 
 int should_colorize(void) {
     if(!isatty(1))
@@ -53,6 +61,9 @@ int set_color(color_t color) {
         case green:
             printf(COLOR_GREEN);
             break;
+        case yellow:
+            printf(COLOR_YELLOW);
+            break;
         case none:
             printf(COLOR_RESET);
             break;
@@ -60,6 +71,101 @@ int set_color(color_t color) {
     }
 }
 
+void print_test_start(char *test_name) {
+    printf("%s%*s: ", test_name,
+           (int)MAX(1, 40 - strlen(test_name)), " ");
+    fflush(stdout);
+}
+
+void print_test_result(result_t result) {
+    switch(result) {
+    case SUCCESS:
+        set_color(green);
+        printf("Ok");
+        break;
+    case FAIL:
+        set_color(red);
+        printf("FAIL");
+        break;
+    case SKIP:
+        set_color(yellow);
+        printf("SKIP");
+        break;
+    case WARN:
+        set_color(yellow);
+        printf("WARN");
+        break;
+    }
+
+    set_color(none);
+    printf("\n");
+}
+
+int run_scm_tests(char *testdir) {
+    DIR *d;
+    lv_t *env;
+    lv_t *result;
+    char buffer[4096];
+    struct dirent *de;
+    char *test;
+    jmp_buf jb;
+    int success = 1;
+    int err;
+
+    c_set_top_context(&jb);
+
+    d = opendir(testdir);
+    if(!d) {
+        perror("opendir");
+        return 0;
+    }
+
+    while((de = readdir(d))) {
+        if((strlen(de->d_name) > 4) && (!strncasecmp(de->d_name, "test", 4))) {
+            env = scheme_report_environment(NULL, NULL);
+            snprintf(buffer, sizeof(buffer), "(load \"%s/%s\")",
+                     testdir, de->d_name);
+
+            c_sequential_eval(env, lisp_parse_string(buffer));
+
+            /* run through the environment, calling all the tests */
+            void maybe_run_test(lv_t *l_n, lv_t *l_t) {
+                if(!(l_n->type == l_sym || l_n->type == l_str)) {
+                    exit(EXIT_FAILURE);
+                }
+
+                if(l_n->type == l_sym)
+                    test = L_SYM(l_n);
+                if(l_n->type == l_str)
+                    test = L_STR(l_n);
+
+                if((strlen(test) > 4) && (!strncasecmp(test, "test", 4))) {
+                    print_test_start(test);
+                    snprintf(buffer, sizeof(buffer), "(%s)", test);
+
+                    if((err = setjmp(jb)) == 0) {
+                        result = c_sequential_eval(env, lisp_parse_string(buffer));
+                        err = 0;
+                    }
+
+                    if(err == 0) {
+                        print_test_result(SUCCESS);
+                    } else if (err == le_warn) {
+                        print_test_result(WARN);
+                    } else {
+                        print_test_result(FAIL);
+                        success = 0;
+                    }
+                }
+            }
+
+            c_hash_walk(L_CAR(env), maybe_run_test);
+        }
+    }
+
+    closedir(d);
+    return success;
+}
 
 int main(int argc, char *argv[]) {
     test_t *current = test_list;
@@ -73,25 +179,23 @@ int main(int argc, char *argv[]) {
 
     while((current->test_fn) && (current_errors < MAX_ERRORS)) {
         current_test = current->test_name;
-        printf("%s%*s: ", current->test_name,
-               (int)MAX(1, 40 - strlen(current->test_name)), " ");
 
-        fflush(stdout);
+        print_test_start(current->test_name);
+
         result = current->test_fn(NULL);
-        if(result) {
-            set_color(green);
-            printf("Ok");
-        } else {
-            set_color(red);
-            printf("Error");
+
+        if(result)
+            print_test_result(SUCCESS);
+        else {
+            print_test_result(FAIL);
             success = 0;
         }
 
-        set_color(none);
-        printf("\n");
-
         current++;
     }
+
+    if(!run_scm_tests("tests"))
+        success = 0;
 
     printf("------------------------------------------------\n");
 
@@ -110,15 +214,10 @@ int main(int argc, char *argv[]) {
 
     printf("\nResult: ");
     if(success) {
-        set_color(green);
-        printf("Ok");
+        print_test_result(SUCCESS);
     } else {
-        set_color(red);
-        printf("Error");
+        print_test_result(FAIL);
     }
-
-    set_color(none);
-    printf("\n");
 
     exit(!success);
 }

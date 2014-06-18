@@ -43,7 +43,9 @@ typedef enum lisp_exception_t {
     le_type,           /* wrong type for operation */
     le_lookup,         /* could not bind -- not in environment */
     le_internal,       /* internal error (malloc?) */
-    le_syntax          /* parse error */
+    le_syntax,         /* parse error */
+    le_raise,          /* deliberate raise */
+    le_warn            /* deliberate raise */
 } lisp_exception_t;
 
 typedef enum lisp_funtype_t {

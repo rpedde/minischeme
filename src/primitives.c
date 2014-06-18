@@ -39,6 +39,7 @@
 
 typedef struct hash_node_t {
     uint32_t key;
+    lv_t *key_item;
     lv_t *value;
 } hash_node_t;
 
@@ -67,6 +68,9 @@ static environment_list_t s_r5_list[] = {
     { "inspect", inspect },
     { "load", load },
     { "length", length },
+    { "assert", p_assert },
+    { "warn", p_warn },
+    { "not", p_not },
     { NULL, NULL }
 };
 
@@ -127,6 +131,8 @@ static int s_hash_cmp(const void *a, const void *b) {
 }
 
 static int s_hash_item(lv_t *item) {
+    assert(item);
+
     if(item->type == l_str)
 	return murmurhash2(L_STR(item), strlen(L_STR(item)), 0);
     if(item->type == l_sym)
@@ -135,13 +141,27 @@ static int s_hash_item(lv_t *item) {
     rt_assert(0, le_type, "unhashable data type");
 }
 
+void c_hash_walk(lv_t *hash, void(*callback)(lv_t *, lv_t *)) {
+    assert(hash && hash->type == l_hash);
+    assert(callback);
+
+    void hash_walker(const void *np, const VISIT w, const int d) {
+        if(w == leaf || w == postorder) {
+            // inorder, strangely
+            callback((*(hash_node_t **)np)->key_item,
+                     (*(hash_node_t **)np)->value);
+        }
+    }
+
+    twalk(L_HASH(hash), hash_walker);
+}
+
 lv_t *c_hash_fetch(lv_t *hash, lv_t *key) {
     hash_node_t node_key;
     void *result;
 
-    rt_assert(hash->type == l_hash, le_type, "hash operation on non-hash");
-    rt_assert(key->type == l_str || key->type == l_sym,
-              le_type, "invalid hash key type");
+    assert(hash && hash->type == l_hash);
+    assert(key && (key->type == l_str || key->type == l_sym));
 
     node_key.key = s_hash_item(key);
 
@@ -165,11 +185,14 @@ int c_hash_insert(lv_t *hash,
 
     pnew=safe_malloc(sizeof(hash_node_t));
     pnew->key = s_hash_item(key);
+    pnew->key_item = key;
     pnew->value = value;
 
     result = tsearch(pnew, &L_HASH(hash), s_hash_cmp);
     if((*(hash_node_t **)result)->value != value)
         (*(hash_node_t **)result)->value = value;
+
+    (*(hash_node_t **)result)->key_item = key;
 
     return(result != NULL);
 }
@@ -429,12 +452,16 @@ lv_t *lisp_args_overlay(lv_t *formals, lv_t *args) {
     lv_t *pf, *pa;
     lv_t *env_layer;
 
-    assert(formals->type == l_pair);
-    assert(args->type == l_pair);
+    assert(formals->type == l_pair || formals->type == l_null);
+    assert(args->type == l_pair || args->type == l_null);
 
     env_layer = lisp_create_hash();
     pf = formals;
     pa = args;
+
+    rt_assert(formals->type == l_pair ||
+              (formals->type == l_null && c_list_length(args) == 0),
+              le_arity, "arity");
 
     while(pf && L_CAR(pf)) {
         if(L_CAR(pf)->type == l_sym &&
