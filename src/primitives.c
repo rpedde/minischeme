@@ -22,7 +22,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <search.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <setjmp.h>
@@ -36,6 +35,7 @@
 #include "murmurhash.h"
 #include "grammar.h"
 #include "tokenizer.h"
+#include "redblack.h"
 
 typedef struct hash_node_t {
     uint32_t key;
@@ -111,17 +111,7 @@ char *safe_strdup(char *str) {
     return result;
 }
 
-static void s_node_free(void *nodep) {
-    /* do nothing... everything is gc'd */
-}
-
-static void s_hash_finalizer(void *v_obj, void *v_env) {
-    lv_t *obj = (lv_t*)v_obj;
-
-    tdestroy(L_HASH(obj), s_node_free);
-}
-
-static int s_hash_cmp(const void *a, const void *b) {
+static int s_hash_cmp(const void *a, const void *b, const void *e) {
     hash_node_t *v1 = (hash_node_t*)a;
     hash_node_t *v2 = (hash_node_t*)b;
 
@@ -147,31 +137,31 @@ void c_hash_walk(lv_t *hash, void(*callback)(lv_t *, lv_t *)) {
     assert(hash && hash->type == l_hash);
     assert(callback);
 
-    void hash_walker(const void *np, const VISIT w, const int d) {
+    void hash_walker(const void *np, const VISIT w, const int d, void *msg) {
         if(w == leaf || w == postorder) {
             // inorder, strangely
-            callback((*(hash_node_t **)np)->key_item,
-                     (*(hash_node_t **)np)->value);
+            callback(((hash_node_t *)np)->key_item,
+                     ((hash_node_t *)np)->value);
         }
     }
 
-    twalk(L_HASH(hash), hash_walker);
+    rbwalk(L_HASH(hash), hash_walker, NULL);
 }
 
 lv_t *c_hash_fetch(lv_t *hash, lv_t *key) {
     hash_node_t node_key;
-    void *result;
+    hash_node_t *result;
 
     assert(hash && hash->type == l_hash);
     assert(key && (key->type == l_str || key->type == l_sym));
 
     node_key.key = s_hash_item(key);
 
-    result = tfind(&node_key, &L_HASH(hash), s_hash_cmp);
+    result = (hash_node_t *)rbfind(&node_key, L_HASH(hash));
     if(!result)
         return NULL;
 
-    return (*(hash_node_t **)result)->value;
+    return result->value;
 }
 
 int c_hash_insert(lv_t *hash,
@@ -179,7 +169,7 @@ int c_hash_insert(lv_t *hash,
                   lv_t *value) {
 
     hash_node_t *pnew;
-    void *result;
+    hash_node_t *result;
 
     rt_assert(hash->type == l_hash, le_type, "hash operation on non-hash");
     rt_assert(key->type == l_str || key->type == l_sym,
@@ -190,25 +180,26 @@ int c_hash_insert(lv_t *hash,
     pnew->key_item = key;
     pnew->value = value;
 
-    result = tsearch(pnew, &L_HASH(hash), s_hash_cmp);
-    if((*(hash_node_t **)result)->value != value)
-        (*(hash_node_t **)result)->value = value;
+    result = (hash_node_t *)rbsearch((void*)pnew, L_HASH(hash));
 
-    (*(hash_node_t **)result)->key_item = key;
+    rt_assert(result, le_internal, "memory error");
+
+    result->value = value;
+    result->key_item = key;
 
     return(result != NULL);
 }
 
 int c_hash_delete(lv_t *hash, lv_t *key) {
     hash_node_t node_key;
-    void *result;
+    hash_node_t *result;
 
     rt_assert(hash->type == l_hash, le_type, "hash operation on non-hash");
     rt_assert(key->type == l_str || key->type == l_sym,
               le_type, "invalid hash key type");
 
     node_key.key = s_hash_item(key);
-    result = tdelete(&node_key, &L_HASH(hash), s_hash_cmp);
+    result = (hash_node_t *)rbdelete(&node_key, L_HASH(hash));
     return(result != NULL);
 }
 
@@ -223,10 +214,10 @@ lv_t *lisp_create_hash(void) {
 
     result = safe_malloc(sizeof(lv_t));
     result->type = l_hash;
-    L_HASH(result) = NULL;
+    L_HASH(result) = rbinit(s_hash_cmp, NULL);
 
-    /* set up a finalizer */
-    GC_register_finalizer(result, s_hash_finalizer, NULL, NULL, NULL);
+    rt_assert(L_HASH(result), le_internal, "memory error");
+
     return result;
 }
 

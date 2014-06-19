@@ -8,7 +8,7 @@
 
 (define test-cons1 (lambda () (assert (equal? '(1 2 3) (cons 1 '(2 3))))))
 (define test-cons2 (lambda () (assert (equal? '(1 . 2) (cons 1 2)))))
-;; (define test-cons3 (lambda () (assert (equal? '(() . 0) (cons '() 0)))))
-;; (define test-cons4 (lambda () (assert (equal? '(0) (cons 0 '())))))
-;; (define test-cons5
-;;   (lambda () (assert (equal? '(()) (cons '() '())))))
+(define test-cons3 (lambda () (assert (equal? '(() . 0) (cons '() 0)))))
+(define test-cons4 (lambda () (assert (equal? '(0) (cons 0 '())))))
+(define test-cons5
+  (lambda () (assert (equal? '(()) (cons '() '())))))
