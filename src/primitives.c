@@ -73,6 +73,8 @@ static environment_list_t s_r5_list[] = {
     { "cons", p_cons },
     { "car", p_car },
     { "cdr", p_cdr },
+    { "gensym", p_gensym },
+    { "display", p_display },
     { NULL, NULL }
 };
 

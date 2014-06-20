@@ -334,3 +334,76 @@ lv_t *p_cons(lv_t *env, lv_t *v) {
     rt_assert(c_list_length(v) == 2, le_arity, "cons arity");
     return lisp_create_pair(L_CAR(v), L_CADR(v));
 }
+
+/**
+ * generate a unique symbol.  This should probably
+ */
+lv_t *p_gensym(lv_t *env, lv_t *v) {
+    static int sym_no=0;
+    char buffer[20];
+
+    assert(v && (v->type == l_pair || v->type == l_null));
+
+    rt_assert(c_list_length(v) == 0, le_arity, "gensym arity");
+    snprintf(buffer, sizeof(buffer), "<gensym-%05d>", sym_no++);
+
+    return lisp_create_symbol(buffer);
+}
+
+/**
+ * print a string
+ */
+lv_t *p_display(lv_t *env, lv_t *v) {
+    assert(v && v->type == l_pair);
+
+    rt_assert(c_list_length(v) == 1, le_arity, "display arity");
+
+    lisp_dump_value(1, L_CAR(v), 0);
+
+    fflush(stdout);
+    return L_CAR(v);
+}
+
+/**
+ * format a string
+ */
+lv_t *p_format(lv_t *env, lv_t *v) {
+    assert(v && v->type == l_pair);
+    lv_t *current_arg;
+    char *format, *current;
+
+    /* make sure the format string is a string */
+    rt_assert(L_CAR(v)->type == l_str, le_type, "bad format specifier");
+
+    format = L_STR(L_CAR(v));
+    current = format;
+
+    current_arg = L_CADR(v);
+
+    while(current) {
+        if(*current != '~') {
+            dprintf(1, "%c", current);
+        } else {
+            current++;
+
+            if(*current == 'A' ||
+               *current == 'S') {
+                rt_assert(current_arg && L_CAR(current_arg),
+                          le_arity, "insufficient args");
+                p_display(env, L_CAR(current_arg));
+                current_arg = L_CDR(current_arg);
+            } else if (*current == '~') {
+                dprintf(1, "~");
+            } else if (*current == '%') {
+                dprintf(1, "\n");
+            } else {
+                rt_assert(0, le_syntax, "bad format specifier");
+            }
+
+        }
+        current++;
+    }
+
+    fflush(stdout);
+    return lisp_create_null();
+}
