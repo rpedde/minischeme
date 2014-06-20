@@ -52,6 +52,7 @@ void repl(int level) {
     lv_t *env_sym;
     lv_t *result;
     lv_t *env = scheme_report_environment(NULL, NULL);
+    lv_t *str;
     char sym_buf[20];
 
     c_set_top_context(&jb);
@@ -92,8 +93,8 @@ void repl(int level) {
 
             dprintf(1, "%s = ", sym_buf);
 
-            lisp_dump_value(1, result, 0);
-            printf("\n");
+            str = lisp_str_from_value(result);
+            printf("%s\n", L_STR(str));
         }
 
         // and l.  ;)

@@ -392,6 +392,84 @@ void lisp_stamp_value(lv_t *v, int row, int col, char *file) {
     v->file = file;
 }
 
+int lisp_snprintf(char *buf, int len, lv_t *v) {
+    int pair_len = 0;
+
+    switch(v->type) {
+    case l_null:
+        return snprintf(buf, len, "()");
+    case l_int:
+        return snprintf(buf, len, "%" PRIu64, L_INT(v));
+    case l_float:
+        return snprintf(buf, len, "%0.16g", L_FLOAT(v));
+    case l_bool:
+        return snprintf(buf, len, "%s", L_BOOL(v) ? "#t": "#f");
+    case l_sym:
+        return snprintf(buf, len, "%s", L_SYM(v));
+    case l_str:
+        return snprintf(buf, len, "\"%s\"", L_STR(v));
+    case l_pair:
+        if(len >= 1)
+            sprintf(buf, "(");
+
+        pair_len += 1;
+
+        lv_t *vp = v;
+
+        while(vp && L_CAR(vp)) {
+            pair_len += lisp_snprintf(buf + pair_len,
+                                      (len - pair_len) > 0 ? len - pair_len : 0,
+                                      L_CAR(vp));
+
+            if(L_CDR(vp) && (L_CDR(vp)->type != l_pair)) {
+                pair_len += snprintf(buf + pair_len,
+                                     (len - pair_len) > 0 ? len - pair_len : 0,
+                                     " . ");
+
+                pair_len += lisp_snprintf(buf + pair_len,
+                                          (len - pair_len) > 0 ? len - pair_len : 0,
+                                          L_CDR(vp));
+                vp = NULL;
+            } else {
+                vp = L_CDR(vp);
+                if(vp) {
+                    if (len - pair_len > 0)
+                        snprintf(buf + pair_len, len - pair_len, " ");
+                    pair_len++;
+                }
+            }
+        }
+
+        if (len - pair_len > 0) {
+            sprintf(buf + pair_len, ")");
+        }
+
+        pair_len++;
+        return pair_len;
+        break;
+    case l_fn:
+        if(L_FN(v) == NULL)
+            return snprintf(buf, len, "<lambda@%p>", v);
+        else
+            return snprintf(buf, len, "<built-in@%p>", v);
+        break;
+    default:
+        // missing a type check.
+        assert(0);
+    }
+
+}
+
+lv_t *lisp_str_from_value(lv_t *v) {
+    int len = lisp_snprintf(NULL, 0, v);
+    char *buf = safe_malloc(len + 1);
+
+    memset(buf, 0, len + 1);
+    lisp_snprintf(buf, len + 1, v);
+
+    return lisp_create_string(buf);
+}
+
 /**
  * print a value to a fd, in a debug form
  */
