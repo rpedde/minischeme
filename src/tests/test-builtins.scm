@@ -40,3 +40,28 @@
 ;; (define test-pair?4
 ;;   (lambda ()
 ;;     (assert (equal? #f (pair? '#(a b))))))
+
+(define test-lambda-value-return
+  (lambda ()
+    (assert ((lambda () #t)))))
+(define test-lambda-arg-return
+  (lambda ()
+    (assert ((lambda (x) x) #t))))
+(define test-lambda-closure-overwritten
+  (lambda ()
+    (let ((x #f))
+      (assert ((lambda (x) x) #t)))))
+(define test-lambda-closure-used
+  (lambda ()
+    (let ((x 1))
+      (assert (equal? 2 ((lambda () (+ x 1))))))))
+(define test-lambda-null-body
+  (lambda ()
+    ; the following should error
+    (warn (not (equal? () ((lambda () ())))))))
+;; ; no varargs support yet
+;; (define test-lambda-varargs
+;;   (lambda ()
+;;     (assert
+;;      (equal? '(2 3 4)
+;; 	     ((lambda (a . b) b) 1 2 3 4)))))
