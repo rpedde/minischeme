@@ -78,6 +78,7 @@ extern void lisp_dump_value(int fd, lv_t *value, int level);
 extern int c_list_length(lv_t *v);
 extern lv_t *c_make_list(lv_t *item, ...);
 extern lv_t *lisp_str_from_value(lv_t *v);
+extern int lisp_snprintf(char *buf, int len, lv_t *v);
 
 /**
  * actual language items

@@ -24,7 +24,7 @@ MS_ORIG_CFLAGS="${CFLAGS:-none}"
 MS_ORIG_CPPFLAGS="${CPPFLAGS:-none}"
 MS_ORIG_CXXFLAGS="${CXXFLAGS:-none}"
 
-CFLAGS="${CFLAGS} -D_GNU_SOURCE"
+CFLAGS="${CFLAGS} -D_GNU_SOURCE -g"
 
 # Checks for programs.
 AC_PROG_LEX
@@ -41,5 +41,3 @@ AC_CANONICAL_HOST
 AC_HEADER_STDC
 
 AC_OUTPUT(Makefile src/Makefile)
-
-                    

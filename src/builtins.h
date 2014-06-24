@@ -42,5 +42,6 @@ extern lv_t *p_cdr(lv_t *env, lv_t *v);
 extern lv_t *p_cons(lv_t *env, lv_t *v);
 extern lv_t *p_gensym(lv_t *env, lv_t *v);
 extern lv_t *p_display(lv_t *env, lv_t *v);
+extern lv_t *p_format(lv_t *env, lv_t *v);
 
 #endif /* __BUILTINS_H__ */

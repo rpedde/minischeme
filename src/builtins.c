@@ -354,23 +354,29 @@ lv_t *p_gensym(lv_t *env, lv_t *v) {
  * print a string
  */
 lv_t *p_display(lv_t *env, lv_t *v) {
+    lv_t *str;
+
     assert(v && v->type == l_pair);
 
     rt_assert(c_list_length(v) == 1, le_arity, "display arity");
 
-    lisp_dump_value(1, L_CAR(v), 0);
-
+    str = lisp_str_from_value(L_CAR(v));
+    fprintf(stdout, "%s", L_STR(str));
     fflush(stdout);
-    return L_CAR(v);
+
+    return lisp_create_null();
 }
 
 /**
- * format a string
+ * given a string format specifier, create a new
+ * string with the correct format
  */
 lv_t *p_format(lv_t *env, lv_t *v) {
     assert(v && v->type == l_pair);
-    lv_t *current_arg;
+    lv_t *current_arg = NULL;
     char *format, *current;
+    char *return_buffer, *return_ptr;
+    int len;
 
     /* make sure the format string is a string */
     rt_assert(L_CAR(v)->type == l_str, le_type, "bad format specifier");
@@ -378,24 +384,67 @@ lv_t *p_format(lv_t *env, lv_t *v) {
     format = L_STR(L_CAR(v));
     current = format;
 
-    current_arg = L_CADR(v);
+    current_arg = L_CDR(v);
 
-    while(current) {
+    /* first, find out how long the destination string
+     * must be, using the lisp_snprintf stuff */
+    len = 0;
+    while(*current) {
         if(*current != '~') {
-            dprintf(1, "%c", current);
+            len++;
         } else {
             current++;
-
-            if(*current == 'A' ||
-               *current == 'S') {
+            switch(*current) {
+            case 'A':
+            case 'S':
                 rt_assert(current_arg && L_CAR(current_arg),
                           le_arity, "insufficient args");
-                p_display(env, L_CAR(current_arg));
+
+                len += lisp_snprintf(NULL, 0, L_CAR(current_arg));
                 current_arg = L_CDR(current_arg);
+                break;
+            case '~':
+            case '%':
+                len++;
+                break;
+            default:
+                rt_assert(0, le_syntax, "bad format specifier");
+            }
+        }
+        current++;
+    }
+
+    fprintf(stderr, "propsed len: %d\n", len);
+
+    current = format;
+    current_arg = L_CDR(v);
+
+    return_buffer = safe_malloc(len + 1);
+    return_ptr = return_buffer;
+
+    memset(return_buffer, 0, sizeof(return_buffer));
+
+    int item_len = 0;
+
+    while(*current) {
+        if(*current != '~') {
+            *return_ptr = *current;
+            return_ptr++;
+        } else {
+            current++;
+            if(*current == 'A' ||
+               *current == 'S') {
+                item_len = lisp_snprintf(return_ptr,
+                                         len - (return_ptr - return_buffer) + 1,
+                                         L_CAR(current_arg));
+                current_arg = L_CDR(current_arg);
+                return_ptr += item_len;
             } else if (*current == '~') {
-                dprintf(1, "~");
+                *return_ptr = '~';
+                return_ptr++;
             } else if (*current == '%') {
-                dprintf(1, "\n");
+                *return_ptr = '\n';
+                return_ptr++;
             } else {
                 rt_assert(0, le_syntax, "bad format specifier");
             }
@@ -404,6 +453,6 @@ lv_t *p_format(lv_t *env, lv_t *v) {
         current++;
     }
 
-    fflush(stdout);
-    return lisp_create_null();
+    /* FIXME: need a non-strduping create_string */
+    return lisp_create_string(return_buffer);
 }

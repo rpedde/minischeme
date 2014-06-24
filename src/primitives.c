@@ -75,6 +75,7 @@ static environment_list_t s_r5_list[] = {
     { "cdr", p_cdr },
     { "gensym", p_gensym },
     { "display", p_display },
+    { "format", p_format },
     { NULL, NULL }
 };
 
@@ -455,6 +456,7 @@ int lisp_snprintf(char *buf, int len, lv_t *v) {
         break;
     default:
         // missing a type check.
+        fprintf(stderr, "Crazy type: %d\n", v->type);
         assert(0);
     }
 
