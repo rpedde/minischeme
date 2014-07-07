@@ -26,6 +26,7 @@
 #include <inttypes.h>
 #include <setjmp.h>
 #include <stdarg.h>
+#include <limits.h>
 
 #include <gc.h>
 
@@ -51,31 +52,34 @@ typedef struct environment_list_t {
 static jmp_buf *assert_handler = NULL;
 static int emit_on_error = 1;
 
-static environment_list_t s_r5_list[] = {
-    { "null?", p_nullp },
-    { "symbol?", p_symbolp },
-    { "atom?", p_atomp },
-    { "cons?", p_consp },
-    { "list?", p_listp },
-    { "pair?", p_pairp },
-    { "equal?", p_equalp },
-    { "+", p_plus },
-    { "null-environment", null_environment },
+static environment_list_t s_env_global[] = {
     { "scheme-report-environment", scheme_report_environment },
-    { "set-cdr!", p_set_cdr },
-    { "set-car!", p_set_car },
-    { "inspect", p_inspect },
-    { "load", p_load },
-    { "length", p_length },
-    { "assert", p_assert },
-    { "warn", p_warn },
-    { "not", p_not },
-    { "cons", p_cons },
-    { "car", p_car },
-    { "cdr", p_cdr },
-    { "gensym", p_gensym },
-    { "display", p_display },
-    { "format", p_format },
+    { NULL, NULL }
+};
+
+static environment_list_t s_env_prim[] = {
+    { "p-+", p_plus },
+    { "p-null?", p_nullp },
+    { "p-symbol?", p_symbolp },
+    { "p-atom?", p_atomp },
+    { "p-cons?", p_consp },
+    { "p-list?", p_listp },
+    { "p-pair?", p_pairp },
+    { "p-equal?", p_equalp },
+    { "p-set-cdr!", p_set_cdr },
+    { "p-set-car!", p_set_car },
+    { "p-length", p_length },
+    { "p-inspect", p_inspect },
+    { "p-load", p_load },
+    { "p-assert", p_assert },
+    { "p-warn", p_warn },
+    { "p-not", p_not },
+    { "p-cons", p_cons },
+    { "p-car", p_car },
+    { "p-cdr", p_cdr },
+    { "p-gensym", p_gensym },
+    { "p-display", p_display },
+    { "p-format", p_format },
     { NULL, NULL }
 };
 
@@ -920,16 +924,35 @@ lv_t *null_environment(lv_t *env, lv_t *v) {
 }
 
 lv_t *scheme_report_environment(lv_t *env, lv_t *v) {
-    environment_list_t *current = s_r5_list;
-    lv_t *newenv = lisp_create_hash();
+    environment_list_t *current = s_env_prim;
+    lv_t *p_layer = lisp_create_hash();
+    lv_t *newenv;
+    char filename[40];
 
+    assert(v);
+
+    rt_assert(c_list_length(v) == 1, le_arity, "arity");
+    rt_assert(L_CAR(v)->type == l_int, le_type,
+              "environment specifier must be an int");
+
+
+    snprintf(filename, sizeof(filename), "env/r%d.scm", L_INT(L_CAR(v)));
+
+    /* now, load up a primitive environment */
     while(current && current->name) {
-        c_hash_insert(newenv, lisp_create_string(current->name),
+        c_hash_insert(p_layer, lisp_create_string(current->name),
                       lisp_create_native_fn(current->fn));
         current++;
     }
 
-    return lisp_create_pair(newenv, NULL);
+    newenv = lisp_create_pair(lisp_create_hash(),
+                              lisp_create_pair(p_layer, NULL));
+
+    /* now, run the setup environment */
+    p_load(newenv, lisp_create_pair(lisp_create_string(filename), NULL));
+
+    /* and return just the generated environment */
+    return lisp_create_pair(L_CAR(newenv), NULL);
 }
 
 /**

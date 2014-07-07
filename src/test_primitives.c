@@ -46,7 +46,8 @@ int test_environment(void *scaffold) {
     lv_t *fn2;
 
     /* get an env */
-    lv_t *env = scheme_report_environment(NULL, NULL);
+    lv_t *env = scheme_report_environment(NULL, lisp_create_pair(
+                                              lisp_create_int(5), NULL));
 
     /* make sure it's generally working */
     assert(c_env_lookup(env, lisp_create_symbol("asdlfjkasf")) == NULL);

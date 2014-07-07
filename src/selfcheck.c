@@ -122,7 +122,8 @@ int run_scm_tests(char *testdir) {
 
     while((de = readdir(d))) {
         if((strlen(de->d_name) > 4) && (!strncasecmp(de->d_name, "test", 4))) {
-            env = scheme_report_environment(NULL, NULL);
+            env = scheme_report_environment(NULL, lisp_create_pair(
+                                                lisp_create_int(5), NULL));
             snprintf(buffer, sizeof(buffer), "(load \"%s/%s\")",
                      testdir, de->d_name);
 

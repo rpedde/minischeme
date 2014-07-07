@@ -51,9 +51,13 @@ void repl(int level) {
     lv_t *parsed_value;
     lv_t *env_sym;
     lv_t *result;
-    lv_t *env = scheme_report_environment(NULL, NULL);
+    lv_t *env;
+    lv_t *arg;
     lv_t *str;
     char sym_buf[20];
+
+    arg = lisp_create_pair(lisp_create_int(5), NULL);
+    env = scheme_report_environment(NULL, arg);
 
     c_set_top_context(&jb);
 
