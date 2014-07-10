@@ -46,17 +46,16 @@ int test_environment(void *scaffold) {
     lv_t *fn2;
 
     /* get an env */
-    lv_t *env = scheme_report_environment(NULL, lisp_create_pair(
-                                              lisp_create_int(5), NULL));
+    lexec_t *exec = lisp_context_new(5);
 
     /* make sure it's generally working */
-    assert(c_env_lookup(env, lisp_create_symbol("asdlfjkasf")) == NULL);
+    assert(c_env_lookup(exec->env, lisp_create_symbol("asdlfjkasf")) == NULL);
 
     /* check string and symbol interop */
-    fn = c_env_lookup(env, lisp_create_string("null?"));
+    fn = c_env_lookup(exec->env, lisp_create_string("null?"));
     assert(fn);
 
-    fn2 = c_env_lookup(env, lisp_create_symbol("null?"));
+    fn2 = c_env_lookup(exec->env, lisp_create_symbol("null?"));
     assert(fn2);
 
     assert(fn == fn2);

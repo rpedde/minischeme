@@ -21,27 +21,27 @@
 #ifndef __BUILTINS_H__
 #define __BUILTINS_H__
 
-extern lv_t *p_nullp(lv_t *env, lv_t *v);
-extern lv_t *p_symbolp(lv_t *env, lv_t *v);
-extern lv_t *p_atomp(lv_t *env, lv_t *v);
-extern lv_t *p_consp(lv_t *env, lv_t *v);
-extern lv_t *p_listp(lv_t *env, lv_t *v);
-extern lv_t *p_pairp(lv_t *env, lv_t *v);
-extern lv_t *p_plus(lv_t *env, lv_t *v);
-extern lv_t *p_equalp(lv_t *env, lv_t *v);
-extern lv_t *p_set_cdr(lv_t *env, lv_t *v);
-extern lv_t *p_set_car(lv_t *env, lv_t *v);
-extern lv_t *p_inspect(lv_t *env, lv_t *v);
-extern lv_t *p_load(lv_t *env, lv_t *v);
-extern lv_t *p_length(lv_t *env, lv_t *v);
-extern lv_t *p_assert(lv_t *env, lv_t *v);
-extern lv_t *p_warn(lv_t *env, lv_t *v);
-extern lv_t *p_not(lv_t *env, lv_t *v);
-extern lv_t *p_car(lv_t *env, lv_t *v);
-extern lv_t *p_cdr(lv_t *env, lv_t *v);
-extern lv_t *p_cons(lv_t *env, lv_t *v);
-extern lv_t *p_gensym(lv_t *env, lv_t *v);
-extern lv_t *p_display(lv_t *env, lv_t *v);
-extern lv_t *p_format(lv_t *env, lv_t *v);
+extern lv_t *p_nullp(lexec_t *exec, lv_t *v);
+extern lv_t *p_symbolp(lexec_t *exec, lv_t *v);
+extern lv_t *p_atomp(lexec_t *exec, lv_t *v);
+extern lv_t *p_consp(lexec_t *exec, lv_t *v);
+extern lv_t *p_listp(lexec_t *exec, lv_t *v);
+extern lv_t *p_pairp(lexec_t *exec, lv_t *v);
+extern lv_t *p_plus(lexec_t *exec, lv_t *v);
+extern lv_t *p_equalp(lexec_t *exec, lv_t *v);
+extern lv_t *p_set_cdr(lexec_t *exec, lv_t *v);
+extern lv_t *p_set_car(lexec_t *exec, lv_t *v);
+extern lv_t *p_inspect(lexec_t *exec, lv_t *v);
+extern lv_t *p_load(lexec_t *exec, lv_t *v);
+extern lv_t *p_length(lexec_t *exec, lv_t *v);
+extern lv_t *p_assert(lexec_t *exec, lv_t *v);
+extern lv_t *p_warn(lexec_t *exec, lv_t *v);
+extern lv_t *p_not(lexec_t *exec, lv_t *v);
+extern lv_t *p_car(lexec_t *exec, lv_t *v);
+extern lv_t *p_cdr(lexec_t *exec, lv_t *v);
+extern lv_t *p_cons(lexec_t *exec, lv_t *v);
+extern lv_t *p_gensym(lexec_t *exec, lv_t *v);
+extern lv_t *p_display(lexec_t *exec, lv_t *v);
+extern lv_t *p_format(lexec_t *exec, lv_t *v);
 
 #endif /* __BUILTINS_H__ */

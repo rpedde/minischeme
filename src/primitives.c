@@ -46,14 +46,14 @@ typedef struct hash_node_t {
 
 typedef struct environment_list_t {
     char *name;
-    lv_t *(*fn)(lv_t *, lv_t *);
+    lv_t *(*fn)(lexec_t *, lv_t *);
 } environment_list_t;
 
 static jmp_buf *assert_handler = NULL;
 static int emit_on_error = 1;
 
 static environment_list_t s_env_global[] = {
-    { "scheme-report-environment", scheme_report_environment },
+    /* wants at least scheme-report-environment */
     { NULL, NULL }
 };
 
@@ -358,13 +358,14 @@ lv_t *lisp_create_native_fn(lisp_method_t value) {
 /**
  * defmacro
  */
-lv_t *lisp_create_macro(lv_t *env, lv_t *formals, lv_t *form) {
+lv_t *lisp_create_macro(lexec_t *exec, lv_t *formals, lv_t *form) {
+    assert(exec);
     rt_assert(formals->type == l_pair || formals->type == l_null, le_type,
               "formals must be a list");
 
     lv_t *fn = lisp_create_type(NULL, l_fn);
     L_FN_FTYPE(fn) = lf_macro;
-    L_FN_ENV(fn) = env;
+    L_FN_ENV(fn) = exec->env;
     L_FN_ARGS(fn) = formals;
     L_FN_BODY(fn) = form;
 
@@ -375,13 +376,15 @@ lv_t *lisp_create_macro(lv_t *env, lv_t *formals, lv_t *form) {
 /**
  * lambda-style function, not builtin
  */
-lv_t *lisp_create_lambda(lv_t *env, lv_t *formals, lv_t *body) {
+lv_t *lisp_create_lambda(lexec_t *exec, lv_t *formals, lv_t *body) {
+    assert(exec);
+
     rt_assert(formals->type == l_pair || formals->type == l_null, le_type,
               "formals must be a list");
 
     lv_t *fn = lisp_create_type(NULL, l_fn);
     L_FN_FTYPE(fn) = lf_lambda;
-    L_FN_ENV(fn) = env;
+    L_FN_ENV(fn) = exec->env;
     L_FN_ARGS(fn) = formals;
     L_FN_BODY(fn) = body;
 
@@ -558,67 +561,51 @@ lv_t *lisp_args_overlay(lv_t *formals, lv_t *args) {
     return env_layer;
 }
 
-lv_t *lisp_exec_fn(lv_t *env, lv_t *fn, lv_t *args) {
+lv_t *lisp_exec_fn(lexec_t *exec, lv_t *fn, lv_t *args) {
     lv_t *parsed_args;
     lv_t *layer, *newenv;
     lv_t *macrofn;
+    lv_t *result;
 
-    assert(env && fn && args);
+    assert(exec && fn && args);
     rt_assert(fn->type == l_fn, le_type, "not a function");
 
+    /* FIXME: push exec stack */
     switch(L_FN_FTYPE(fn)) {
     case lf_native:
-        return L_FN(fn)(env, args);
+        result = L_FN(fn)(exec, args);
+        break;
     case lf_lambda:
         layer = lisp_args_overlay(L_FN_ARGS(fn), args);
         newenv = lisp_create_pair(layer, L_FN_ENV(fn));
-        return lisp_eval(newenv, L_FN_BODY(fn));
+        lisp_exec_push_env(exec, newenv);
+        result = lisp_eval(exec, L_FN_BODY(fn));
+        lisp_exec_pop_env(exec);
+        break;
     case lf_macro:
         layer = lisp_args_overlay(L_FN_ARGS(fn), args);
         newenv = lisp_create_pair(layer, L_FN_ENV(fn));
-        macrofn = lisp_eval(newenv, L_FN_BODY(fn));
-        return lisp_eval(newenv, macrofn);
+        lisp_exec_push_env(exec, newenv);
+        macrofn = lisp_eval(exec, L_FN_BODY(fn));
+        result = lisp_eval(exec, macrofn);
+        lisp_exec_pop_env(exec);
+        break;
     default:
         assert(0);
     }
 
-    return NULL;
+    return result;
 }
 
 /**
  * evaluate an expression under let
  */
-lv_t *lisp_let(lv_t *env, lv_t *args, lv_t *expr) {
+lv_t *lisp_let(lexec_t *exec, lv_t *args, lv_t *expr) {
     lv_t *argp = args;
     lv_t *newenv;
+    lv_t *result;
 
-    newenv = lisp_create_hash();
-
-    rt_assert(args->type == l_null ||
-              args->type == l_pair, le_type,
-              "let arg type");
-
-    if(args->type == l_pair) {
-        /* walk through each element of the list,
-           evaling k/v pairs and assigning them
-           to an environment to run the expr in */
-        while(argp && L_CAR(argp)) {
-            rt_assert(c_list_length(L_CAR(argp)) == 2, le_arity,
-                      "let arg arity");
-            c_hash_insert(newenv, L_CAAR(argp),
-                          lisp_eval(env, L_CADAR(argp)));
-            argp=L_CDR(argp);
-        }
-    }
-
-    return lisp_eval(lisp_create_pair(newenv, env), expr);
-}
-
-lv_t *lisp_let_star(lv_t *env, lv_t *args, lv_t *expr) {
-    lv_t *argp = args;
-    lv_t *newenv;
-
-    newenv = lisp_create_pair(lisp_create_hash(), env);
+    newenv = lisp_create_pair(lisp_create_hash(), exec->env);
 
     rt_assert(args->type == l_null ||
               args->type == l_pair, le_type,
@@ -632,18 +619,54 @@ lv_t *lisp_let_star(lv_t *env, lv_t *args, lv_t *expr) {
             rt_assert(c_list_length(L_CAR(argp)) == 2, le_arity,
                       "let arg arity");
             c_hash_insert(L_CAR(newenv), L_CAAR(argp),
-                          lisp_eval(newenv, L_CADAR(argp)));
+                          lisp_eval(exec, L_CADAR(argp)));
             argp=L_CDR(argp);
         }
     }
 
-    return lisp_eval(newenv, expr);
+    lisp_exec_push_env(exec, newenv);
+    result = lisp_eval(exec, expr);
+    lisp_exec_pop_env(exec);
+
+    return result;
+}
+
+lv_t *lisp_let_star(lexec_t *exec, lv_t *args, lv_t *expr) {
+    lv_t *argp = args;
+    lv_t *newenv;
+    lv_t *result;
+
+    newenv = lisp_create_pair(lisp_create_hash(), exec->env);
+
+    rt_assert(args->type == l_null ||
+              args->type == l_pair, le_type,
+              "let arg type");
+
+    lisp_exec_push_env(exec, newenv);
+
+    if(args->type == l_pair) {
+        /* walk through each element of the list,
+           evaling k/v pairs and assigning them
+           to an environment to run the expr in */
+        while(argp && L_CAR(argp)) {
+            rt_assert(c_list_length(L_CAR(argp)) == 2, le_arity,
+                      "let arg arity");
+            c_hash_insert(L_CAR(newenv), L_CAAR(argp),
+                          lisp_eval(exec, L_CADAR(argp)));
+            argp=L_CDR(argp);
+        }
+    }
+
+    result = lisp_eval(exec, expr);
+    lisp_exec_pop_env(exec);
+
+    return result;
 }
 
 /**
  * quasiquote a term
  */
-lv_t *lisp_quasiquote(lv_t *env, lv_t *v) {
+lv_t *lisp_quasiquote(lexec_t *exec, lv_t *v) {
     lv_t *res;
     lv_t *vptr;
     lv_t *rptr;
@@ -656,7 +679,7 @@ lv_t *lisp_quasiquote(lv_t *env, lv_t *v) {
             !strcmp(L_SYM(L_CAR(v)), "unquote")) {
             rt_assert(c_list_length(L_CDR(v)) == 1, le_arity,
                       "unquote arity");
-            return lisp_eval(env, L_CADR(v));
+            return lisp_eval(exec, L_CADR(v));
         }
 
         /* quasi-quote and unquote-splice stuff */
@@ -671,7 +694,7 @@ lv_t *lisp_quasiquote(lv_t *env, lv_t *v) {
                 rt_assert(c_list_length(L_CDAR(vptr)) == 1, le_arity,
                           "unquote-splicing arity");
 
-                v2 = lisp_eval(env, L_CAR(L_CDAR(vptr)));
+                v2 = lisp_eval(exec, L_CAR(L_CDAR(vptr)));
                 rt_assert(v2->type == l_pair || v2->type == l_null, le_type,
                           "unquote-splicing expects list");
 
@@ -687,7 +710,7 @@ lv_t *lisp_quasiquote(lv_t *env, lv_t *v) {
                     }
                 }
             } else {
-                L_CAR(rptr) = lisp_quasiquote(env, L_CAR(vptr));
+                L_CAR(rptr) = lisp_quasiquote(exec, L_CAR(vptr));
             }
 
             vptr = L_CDR(vptr);
@@ -707,14 +730,17 @@ lv_t *lisp_quasiquote(lv_t *env, lv_t *v) {
 /**
  * evaluate a lisp value
  */
-lv_t *lisp_eval(lv_t *env, lv_t *v) {
+lv_t *lisp_eval(lexec_t *exec, lv_t *v) {
+    lv_t *env;
     lv_t *fn;
     lv_t *args;
     lv_t *result;
     lv_t *a0, *a1, *a2, *a3;
 
+    assert(exec);
+
     if(v->type == l_sym) {
-        result = c_env_lookup(env, v);
+        result = c_env_lookup(exec->env, v);
         if(result)
             return result;
     } /* otherwise, return symbol... */
@@ -729,19 +755,19 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
 	/* test special forms first */
 	if(L_CAR(v)->type == l_sym) {
             if(strcmp(L_SYM(L_CAR(v)), "quote") == 0) {
-		return lisp_quote(env, L_CDR(v));
+		return lisp_quote(exec, L_CDR(v));
             } else if(!strcmp(L_SYM(L_CAR(v)), "define")) {
                 rt_assert(c_list_length(L_CDR(v)) == 2, le_arity,
                           "define arity");
-                result = lisp_eval(env, L_CADDR(v));
+                result = lisp_eval(exec, L_CADDR(v));
                 if(!result->bound)
                     result->bound = L_CADR(v);
 
-                return lisp_define(env, L_CADR(v), result);
+                return lisp_define(exec, L_CADR(v), result);
             } else if(!strcmp(L_SYM(L_CAR(v)), "lambda")) {
                 rt_assert(c_list_length(L_CDR(v)) == 2, le_arity,
                           "lambda arity");
-                result = lisp_create_lambda(env, L_CADR(v), L_CADDR(v));
+                result = lisp_create_lambda(exec, L_CADR(v), L_CADDR(v));
                 lisp_stamp_value(result, v->row, v->col, v->file);
                 return result;
             } else if(!strcmp(L_SYM(L_CAR(v)), "defmacro")) {
@@ -754,46 +780,46 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
                 rt_assert(a1->type == l_sym, le_type,
                           "defmacro wrong type for name");
 
-                return lisp_define(env, a1, lisp_create_macro(env, a2, a3));
+                return lisp_define(exec, a1, lisp_create_macro(exec, a2, a3));
             } else if(!strcmp(L_SYM(L_CAR(v)), "begin")) {
                 rt_assert(L_CADR(v), le_arity, "begin arity");
-                return lisp_begin(env, L_CADR(v));
+                return lisp_begin(exec, L_CADR(v));
             } else if(!strcmp(L_SYM(L_CAR(v)), "quasiquote")) {
                 rt_assert(
                     L_CDR(v)->type == l_null ||
                     (L_CDR(v)->type == l_pair && c_list_length(L_CDR(v)) == 1),
                     le_arity,
                     "quasiquote arity");
-                return lisp_quasiquote(env, L_CADR(v));
+                return lisp_quasiquote(exec, L_CADR(v));
             } else if(!strcmp(L_SYM(L_CAR(v)), "if")) {
                 rt_assert(c_list_length(L_CDR(v)) == 3, le_arity,
                           "if arity");
-                a1 = lisp_eval(env, L_CADR(v));  // expression
+                a1 = lisp_eval(exec, L_CADR(v));  // expression
                 a2 = L_CADDR(v);                 // value if true
                 a3 = L_CADDDR(v);                // value if false
 
                 if(a1->type == l_bool && L_BOOL(a1) == 0)
-                    return lisp_eval(env, a3);
-                return lisp_eval(env, a2);
+                    return lisp_eval(exec, a3);
+                return lisp_eval(exec, a2);
             } else if(!strcmp(L_SYM(L_CAR(v)), "let")) {
                 rt_assert(c_list_length(L_CDR(v)) == 2, le_arity,
                           "let arity");
                 a1 = L_CADR(v);                  // tuple assignment list
                 a2 = L_CADDR(v);                 // eval under let
 
-                return lisp_let(env, a1, a2);
+                return lisp_let(exec, a1, a2);
             } else if(!strcmp(L_SYM(L_CAR(v)), "let*")) {
                 rt_assert(c_list_length(L_CDR(v)) == 2, le_arity,
                           "let arity");
                 a1 = L_CADR(v);                  // tuple assignment list
                 a2 = L_CADDR(v);                 // eval under let
 
-                return lisp_let_star(env, a1, a2);
+                return lisp_let_star(exec, a1, a2);
             }
 	}
 
         /* otherwise, eval all the items, and execute */
-        result = lisp_map(env, lisp_create_pair(lisp_create_native_fn(lisp_eval), v));
+        result = lisp_map(exec, lisp_create_pair(lisp_create_native_fn(lisp_eval), v));
 
         /* make sure it's a function */
         fn = L_CAR(result);
@@ -805,7 +831,7 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
             args = lisp_create_null();
 
         /* and go. */
-        return lisp_exec_fn(env, fn, args);
+        return lisp_exec_fn(exec, fn, args);
 
 	/* /\* test symbols *\/ */
 	/* if(v->type == l_fn) */
@@ -833,7 +859,8 @@ lv_t *lisp_eval(lv_t *env, lv_t *v) {
 /**
  * return a quoted expression
  */
-lv_t *lisp_quote(lv_t *env, lv_t *v) {
+lv_t *lisp_quote(lexec_t *exec, lv_t *v) {
+    assert(exec);
     rt_assert(c_list_length(v) == 1, le_arity, "quote arity");
     return L_CAR(v);
 }
@@ -862,11 +889,13 @@ int c_list_length(lv_t *v) {
  * map a function onto a list, returning the
  * resulting list
  */
-lv_t *lisp_map(lv_t *env, lv_t *v) {
+lv_t *lisp_map(lexec_t *exec, lv_t *v) {
     lv_t *vptr;
     lv_t *result = lisp_create_pair(NULL, NULL);
     lv_t *rptr = result;
     lv_t *fn, *list;
+
+    assert(exec);
 
     fn = L_CAR(v);
     list = L_CDR(v);
@@ -881,7 +910,7 @@ lv_t *lisp_map(lv_t *env, lv_t *v) {
     vptr = list;
 
     while(vptr) {
-        L_CAR(rptr) = L_FN(fn)(env, L_CAR(vptr));
+        L_CAR(rptr) = L_FN(fn)(exec, L_CAR(vptr));
         vptr=L_CDR(vptr);
         if(vptr) {
             L_CDR(rptr) = lisp_create_pair(NULL, NULL);
@@ -896,9 +925,10 @@ lv_t *lisp_map(lv_t *env, lv_t *v) {
 /**
  * execute a lisp function with the passed arg list
  */
-lv_t *lisp_apply(lv_t *env, lv_t *v) {
+lv_t *lisp_apply(lexec_t *exec, lv_t *v) {
     lv_t *fn, *list;
 
+    assert(exec);
     rt_assert(c_list_length(v) == 2, le_arity, "apply arity");
 
     fn = L_CAR(v);
@@ -910,7 +940,7 @@ lv_t *lisp_apply(lv_t *env, lv_t *v) {
     /* here we would check arity, and do arg fixups
      * (&rest, etc) */
 
-    return L_FN(fn)(env, list);
+    return L_FN(fn)(exec, list);
 }
 
 /**
@@ -918,25 +948,30 @@ lv_t *lisp_apply(lv_t *env, lv_t *v) {
  * having primitive access to environments, so...
  */
 
-lv_t *null_environment(lv_t *env, lv_t *v) {
+lv_t *null_environment(lexec_t *exec, lv_t *v) {
     lv_t *newenv = lisp_create_hash();
+
+    assert(exec);
+
     return lisp_create_pair(newenv, NULL);
 }
 
-lv_t *scheme_report_environment(lv_t *env, lv_t *v) {
+lv_t *c_env_version(int version) {
     environment_list_t *current = s_env_prim;
     lv_t *p_layer = lisp_create_hash();
     lv_t *newenv;
     char filename[40];
+    lexec_t *exec;
 
-    assert(v);
-
-    rt_assert(c_list_length(v) == 1, le_arity, "arity");
-    rt_assert(L_CAR(v)->type == l_int, le_type,
-              "environment specifier must be an int");
+    newenv = lisp_create_pair(lisp_create_hash(),
+                              lisp_create_pair(p_layer, NULL));
 
 
-    snprintf(filename, sizeof(filename), "env/r%d.scm", L_INT(L_CAR(v)));
+    exec = safe_malloc(sizeof(lexec_t));
+    memset(exec, 0, sizeof(lexec_t));
+    exec->env = newenv;
+
+    snprintf(filename, sizeof(filename), "env/r%d.scm", version);
 
     /* now, load up a primitive environment */
     while(current && current->name) {
@@ -945,14 +980,11 @@ lv_t *scheme_report_environment(lv_t *env, lv_t *v) {
         current++;
     }
 
-    newenv = lisp_create_pair(lisp_create_hash(),
-                              lisp_create_pair(p_layer, NULL));
-
     /* now, run the setup environment */
-    p_load(newenv, lisp_create_pair(lisp_create_string(filename), NULL));
+    p_load(exec, lisp_create_pair(lisp_create_string(filename), NULL));
 
     /* and return just the generated environment */
-    return lisp_create_pair(L_CAR(newenv), NULL);
+    return lisp_create_pair(L_CAR(exec->env), NULL);
 }
 
 /**
@@ -1030,17 +1062,19 @@ lv_t *lisp_parse_string(char *string) {
     return lst.result;
 }
 
-lv_t *lisp_define(lv_t *env, lv_t *sym, lv_t *v) {
+lv_t *lisp_define(lexec_t *exec, lv_t *sym, lv_t *v) {
+    assert(exec);
+
     /* this is probably not a good or completely safe
      * check of an environment */
-    rt_assert(env->type == l_pair &&
-              L_CAR(env) &&
-              L_CAR(env)->type == l_hash, le_type,
+    rt_assert(exec->env->type == l_pair &&
+              L_CAR(exec->env) &&
+              L_CAR(exec->env)->type == l_hash, le_type,
               "Not a valid environment");
 
     rt_assert(sym->type == l_sym, le_type, "cannot define non-symbol");
 
-    rt_assert(c_hash_insert(L_CAR(env), sym, v), le_internal,
+    rt_assert(c_hash_insert(L_CAR(exec->env), sym, v), le_internal,
         "error inserting hash element");
 
     return lisp_create_null();
@@ -1097,15 +1131,16 @@ lv_t *c_env_lookup(lv_t *env, lv_t *key) {
  *
  * (begin (expr1 expr2 expr3))
  */
-lv_t *lisp_begin(lv_t *env, lv_t *v) {
+lv_t *lisp_begin(lexec_t *exec, lv_t *v) {
     lv_t *current;
     lv_t *retval;
 
+    assert(exec);
     rt_assert(v->type == l_pair, le_type, "cannot begin non-list");
 
     current = v;
     while(v && (L_CAR(v))) {
-        retval = lisp_eval(env, L_CAR(v));
+        retval = lisp_eval(exec, L_CAR(v));
         v = L_CDR(v);
     }
 
@@ -1116,17 +1151,18 @@ lv_t *lisp_begin(lv_t *env, lv_t *v) {
  * eval a list of items, one after the other, returning the
  * value of the last eval
  */
-lv_t *c_sequential_eval(lv_t *env, lv_t *v) {
+lv_t *c_sequential_eval(lexec_t *exec, lv_t *v) {
     lv_t *current = v;
     lv_t *result;
 
+    assert(exec);
     assert(v->type == l_pair || v->type == l_null);
 
     if(v->type == l_null)
         return v;
 
     while(current && L_CAR(current)) {
-        result = lisp_eval(env, L_CAR(current));
+        result = lisp_eval(exec, L_CAR(current));
         current = L_CDR(current);
     }
 
@@ -1165,4 +1201,51 @@ lv_t *lisp_copy_list(lv_t *v) {
     }
 
     return result;
+}
+
+/**
+ * create a new execution context
+ */
+lexec_t *lisp_context_new(int scheme_revision) {
+    lexec_t *ret = safe_malloc(sizeof(lexec_t));
+
+    ret->env = c_env_version(scheme_revision);
+    ret->exec_stack = lisp_create_null();
+    ret->env_stack = lisp_create_null();
+    ret->exc = 0;
+    ret->msg = NULL;
+
+    return ret;
+}
+
+/**
+ * given an execution context, push the existing environment
+ * on the environment stack, replacing the current environment
+ * with the supplied one.
+ */
+void lisp_exec_push_env(lexec_t *exec, lv_t *env) {
+    assert(exec);
+    assert(env);
+
+    if(exec->env_stack && exec->env_stack->type == l_null) {
+        exec->env_stack = NULL;
+    }
+
+    exec->env_stack = lisp_create_pair(exec->env, exec->env_stack);
+    exec->env = env;
+}
+
+/**
+ * given an execution context, pop the top env stack back
+ * into the current env
+ */
+void lisp_exec_pop_env(lexec_t *exec) {
+    lv_t *new_env_stack;
+
+    assert(exec);
+    assert(exec->env_stack && exec->env_stack->type == l_pair);
+
+    new_env_stack = L_CDR(exec->env_stack);
+    exec->env = L_CAR(exec->env_stack);
+    exec->env_stack = new_env_stack;
 }

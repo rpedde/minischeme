@@ -51,13 +51,12 @@ void repl(int level) {
     lv_t *parsed_value;
     lv_t *env_sym;
     lv_t *result;
-    lv_t *env;
     lv_t *arg;
     lv_t *str;
     char sym_buf[20];
+    lexec_t *exec;
 
-    arg = lisp_create_pair(lisp_create_int(5), NULL);
-    env = scheme_report_environment(NULL, arg);
+    exec = lisp_context_new(5); /* get r5rs environment */
 
     c_set_top_context(&jb);
 
@@ -87,13 +86,13 @@ void repl(int level) {
         }
 
         // e!
-        result = c_sequential_eval(env, parsed_value);
+        result = c_sequential_eval(exec, parsed_value);
 
         // p!
         if(result && !is_nil(result)) {
             sprintf(sym_buf, "$%d", line);
             env_sym = lisp_create_symbol(sym_buf);
-            c_hash_insert(L_CAR(env), env_sym, result);
+            c_hash_insert(L_CAR(exec->env), env_sym, result);
 
             dprintf(1, "%s = ", sym_buf);
 

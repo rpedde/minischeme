@@ -33,6 +33,14 @@ extern void *safe_malloc(size_t size);
 extern char *safe_strdup(char *str);
 
 /**
+ * execution context, including execution stack
+ * manipulation
+ */
+extern lexec_t *lisp_context_new(int scheme_revision);
+extern void lisp_exec_push_env(lexec_t *exec, lv_t *env);
+extern void lisp_exec_pop_env(lexec_t *exec);
+
+/**
  * utilities to build primitive types
  */
 extern lv_t *lisp_create_type(void *value, lisp_type_t type);
@@ -45,8 +53,8 @@ extern lv_t *lisp_create_bool(int value);
 extern lv_t *lisp_create_hash(void);
 extern lv_t *lisp_create_null(void);
 extern lv_t *lisp_create_native_fn(lisp_method_t value);
-extern lv_t *lisp_create_lambda(lv_t *env, lv_t *formals, lv_t *body);
-extern lv_t *lisp_create_macro(lv_t *env, lv_t *formals, lv_t *form);
+extern lv_t *lisp_create_lambda(lexec_t *exec, lv_t *formals, lv_t *body);
+extern lv_t *lisp_create_macro(lexec_t *exec, lv_t *formals, lv_t *form);
 extern lv_t *lisp_create_formatted_string(char *fmt, ...)
     __attribute__((format (printf, 1, 2)));
 extern lv_t *lisp_wrap_type(char *symv, lv_t *v);
@@ -56,8 +64,8 @@ extern lv_t *lisp_wrap_type(char *symv, lv_t *v);
  */
 extern lv_t *lisp_parse_string(char *string);
 extern lv_t *lisp_parse_file(char *file);
-extern lv_t *lisp_exec_fn(lv_t *env, lv_t *fn, lv_t *args);
-extern lv_t *lisp_begin(lv_t *env, lv_t *v);
+extern lv_t *lisp_exec_fn(lexec_t *exec, lv_t *fn, lv_t *args);
+extern lv_t *lisp_begin(lexec_t *exec, lv_t *v);
 extern void lisp_stamp_value(lv_t *v, int row, int col, char *file);
 extern lv_t *lisp_copy_list(lv_t *v);
 extern lv_t *lisp_args_overlay(lv_t *formals, lv_t *args);
@@ -83,19 +91,19 @@ extern int lisp_snprintf(char *buf, int len, lv_t *v);
 /**
  * actual language items
  */
-extern lv_t *lisp_eval(lv_t *env, lv_t *v);
-extern lv_t *lisp_map(lv_t *env, lv_t *v);
-extern lv_t *lisp_apply(lv_t *env, lv_t *v);
-extern lv_t *c_sequential_eval(lv_t *env, lv_t *v);
+extern lv_t *lisp_eval(lexec_t *exec, lv_t *v);
+extern lv_t *lisp_map(lexec_t *exec, lv_t *v);
+extern lv_t *lisp_apply(lexec_t *exec, lv_t *v);
+extern lv_t *c_sequential_eval(lexec_t *exec, lv_t *v);
 
 
 /**
  * special form helpers
  */
-extern lv_t *lisp_quote(lv_t *env, lv_t *v);
-extern lv_t *lisp_define(lv_t *env, lv_t *sym, lv_t *v);
-extern lv_t *lisp_quasiquote(lv_t *env, lv_t *v);
-extern lv_t *lisp_let(lv_t *env, lv_t *args, lv_t *expr);
+extern lv_t *lisp_quote(lexec_t *exec, lv_t *v);
+extern lv_t *lisp_define(lexec_t *exec, lv_t *sym, lv_t *v);
+extern lv_t *lisp_quasiquote(lexec_t *exec, lv_t *v);
+extern lv_t *lisp_let(lexec_t *exec, lv_t *args, lv_t *expr);
 
 /**
  * runtime asserts
@@ -113,7 +121,7 @@ extern void c_set_emit_on_error(int v);
 /**
  * environment stuff
  */
-lv_t *null_environment(lv_t *env, lv_t *v);
-lv_t *scheme_report_environment(lv_t *env, lv_t *v);
+lv_t *null_environment(lexec_t *exec, lv_t *v);
+lv_t *c_env_version(int version);
 
 #endif /* __PRIMITIVES_H__ */

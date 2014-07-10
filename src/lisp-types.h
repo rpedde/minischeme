@@ -56,7 +56,15 @@ typedef enum lisp_funtype_t {
 
 typedef struct lv_t lv_t;
 
-typedef lv_t *(*lisp_method_t)(lv_t *, lv_t*);
+typedef struct lexec_t {
+    lv_t *env;
+    lv_t *exec_stack;
+    lv_t *env_stack;
+    lisp_exception_t exc;
+    char *msg;
+} lexec_t;
+
+typedef lv_t *(*lisp_method_t)(lexec_t *, lv_t*);
 
 #define L_INT(what)     what->value.i.value
 #define L_FLOAT(what)   what->value.f.value

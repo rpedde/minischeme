@@ -103,7 +103,7 @@ void print_test_result(result_t result) {
 
 int run_scm_tests(char *testdir) {
     DIR *d;
-    lv_t *env;
+    lexec_t *exec;
     lv_t *result;
     char buffer[4096];
     struct dirent *de;
@@ -122,12 +122,12 @@ int run_scm_tests(char *testdir) {
 
     while((de = readdir(d))) {
         if((strlen(de->d_name) > 4) && (!strncasecmp(de->d_name, "test", 4))) {
-            env = scheme_report_environment(NULL, lisp_create_pair(
-                                                lisp_create_int(5), NULL));
+            exec = lisp_context_new(5);
+
             snprintf(buffer, sizeof(buffer), "(load \"%s/%s\")",
                      testdir, de->d_name);
 
-            c_sequential_eval(env, lisp_parse_string(buffer));
+            c_sequential_eval(exec, lisp_parse_string(buffer));
 
             /* run through the environment, calling all the tests */
             void maybe_run_test(lv_t *l_n, lv_t *l_t) {
@@ -145,7 +145,7 @@ int run_scm_tests(char *testdir) {
                     snprintf(buffer, sizeof(buffer), "(%s)", test);
 
                     if((err = setjmp(jb)) == 0) {
-                        result = c_sequential_eval(env, lisp_parse_string(buffer));
+                        result = c_sequential_eval(exec, lisp_parse_string(buffer));
                         err = 0;
                     }
 
@@ -160,7 +160,7 @@ int run_scm_tests(char *testdir) {
                 }
             }
 
-            c_hash_walk(L_CAR(env), maybe_run_test);
+            c_hash_walk(L_CAR(exec->env), maybe_run_test);
         }
     }
 

@@ -33,7 +33,7 @@ static lv_t *s_is_type(lv_t *v, lisp_type_t t) {
     return lisp_create_bool(0);
 }
 
-lv_t *p_nullp(lv_t *env, lv_t *v) {
+lv_t *p_nullp(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
     rt_assert(c_list_length(v) == 1, le_arity, "wrong arity");
     lv_t *a0 = L_CAR(v);
@@ -41,7 +41,7 @@ lv_t *p_nullp(lv_t *env, lv_t *v) {
     return s_is_type(a0, l_null);
 }
 
-lv_t *p_symbolp(lv_t *env, lv_t *v) {
+lv_t *p_symbolp(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
     rt_assert(c_list_length(v) == 1, le_arity, "wrong arity");
     lv_t *a0 = L_CAR(v);
@@ -49,7 +49,7 @@ lv_t *p_symbolp(lv_t *env, lv_t *v) {
     return s_is_type(a0, l_sym);
 }
 
-lv_t *p_atomp(lv_t *env, lv_t *v) {
+lv_t *p_atomp(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
     rt_assert(c_list_length(v) == 1, le_arity, "wrong arity");
     lv_t *a0 = L_CAR(v);
@@ -59,7 +59,7 @@ lv_t *p_atomp(lv_t *env, lv_t *v) {
     return lisp_create_bool(0);
 }
 
-lv_t *p_consp(lv_t *env, lv_t *v) {
+lv_t *p_consp(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
     rt_assert(c_list_length(v) == 1, le_arity, "wrong arity");
     lv_t *a0 = L_CAR(v);
@@ -67,7 +67,7 @@ lv_t *p_consp(lv_t *env, lv_t *v) {
     return s_is_type(a0, l_pair);
 }
 
-lv_t *p_listp(lv_t *env, lv_t *v) {
+lv_t *p_listp(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
     rt_assert(c_list_length(v) == 1, le_arity, "wrong arity");
     lv_t *a0 = L_CAR(v);
@@ -77,7 +77,7 @@ lv_t *p_listp(lv_t *env, lv_t *v) {
     return lisp_create_bool(0);
 }
 
-lv_t *p_pairp(lv_t *env, lv_t *v) {
+lv_t *p_pairp(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
     rt_assert(c_list_length(v) == 1, le_arity, "wrong arity");
     lv_t *a0 = L_CAR(v);
@@ -141,7 +141,7 @@ int c_equalp(lv_t *a1, lv_t *a2) {
 /**
  * lisp wrapper around c_equalp
  */
-lv_t *p_equalp(lv_t *env, lv_t *v) {
+lv_t *p_equalp(lexec_t *exec, lv_t *v) {
     int result;
 
     assert(v && v->type == l_pair);
@@ -156,7 +156,7 @@ lv_t *p_equalp(lv_t *env, lv_t *v) {
 /**
  * add numeric types
  */
-lv_t *p_plus(lv_t *env, lv_t *v) {
+lv_t *p_plus(lexec_t *exec, lv_t *v) {
     int i_result = 0;
     double f_result = 0.0;
 
@@ -200,7 +200,7 @@ lv_t *p_plus(lv_t *env, lv_t *v) {
     return lisp_create_float(f_result);
 }
 
-lv_t *p_set_cdr(lv_t *env, lv_t *v) {
+lv_t *p_set_cdr(lexec_t *exec, lv_t *v) {
     assert(v && (v->type == l_pair));
 
     rt_assert(c_list_length(v) == 2, le_arity, "set-cdr arity");
@@ -214,7 +214,7 @@ lv_t *p_set_cdr(lv_t *env, lv_t *v) {
     return lisp_create_null();
 }
 
-lv_t *p_set_car(lv_t *env, lv_t *v) {
+lv_t *p_set_car(lexec_t *exec, lv_t *v) {
     assert(v && (v->type == l_pair));
 
     rt_assert(c_list_length(v) == 2, le_arity, "set-cdr arity");
@@ -224,7 +224,7 @@ lv_t *p_set_car(lv_t *env, lv_t *v) {
     return lisp_create_null();
 }
 
-lv_t *p_inspect(lv_t *env, lv_t *v) {
+lv_t *p_inspect(lexec_t *exec, lv_t *v) {
     lv_t *arg;
     int show_line = 1;
     char buffer[256];
@@ -259,22 +259,22 @@ lv_t *p_inspect(lv_t *env, lv_t *v) {
     return lisp_create_string(buffer);
 }
 
-lv_t *p_load(lv_t *env, lv_t *v) {
+lv_t *p_load(lexec_t *exec, lv_t *v) {
     assert(v && (v->type == l_pair));
     rt_assert(c_list_length(v) == 1, le_arity, "load arity");
     rt_assert(L_CAR(v)->type == l_str, le_type, "filename must be string");
 
-    return c_sequential_eval(env, lisp_parse_file(L_STR(L_CAR(v))));
+    return c_sequential_eval(exec, lisp_parse_file(L_STR(L_CAR(v))));
 }
 
-lv_t *p_length(lv_t *env, lv_t *v) {
+lv_t *p_length(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
 
     rt_assert(c_list_length(v) == 1, le_arity, "length arity");
     return lisp_create_int(c_list_length(L_CAR(v)));
 }
 
-lv_t *p_assert(lv_t *env, lv_t *v) {
+lv_t *p_assert(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
     rt_assert(c_list_length(v) == 1, le_arity, "assert arity");
     rt_assert(L_CAR(v)->type == l_bool, le_type, "assert not bool");
@@ -285,7 +285,7 @@ lv_t *p_assert(lv_t *env, lv_t *v) {
     return lisp_create_null();
 }
 
-lv_t *p_warn(lv_t *env, lv_t *v) {
+lv_t *p_warn(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
     rt_assert(c_list_length(v) == 1, le_arity, "warn arity");
     rt_assert(L_CAR(v)->type == l_bool, le_type, "warn not bool");
@@ -296,7 +296,7 @@ lv_t *p_warn(lv_t *env, lv_t *v) {
     return lisp_create_null();
 }
 
-lv_t *p_not(lv_t *env, lv_t *v) {
+lv_t *p_not(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
     rt_assert(c_list_length(v) == 1, le_arity, "not arity");
     rt_assert(L_CAR(v)->type == l_bool, le_type, "not bool");
@@ -304,7 +304,7 @@ lv_t *p_not(lv_t *env, lv_t *v) {
     return lisp_create_bool(!(L_BOOL(L_CAR(v))));
 }
 
-lv_t *p_car(lv_t *env, lv_t *v) {
+lv_t *p_car(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
 
     rt_assert(c_list_length(v) == 1, le_arity, "car arity");
@@ -316,7 +316,7 @@ lv_t *p_car(lv_t *env, lv_t *v) {
     return L_CAAR(v);
 }
 
-lv_t *p_cdr(lv_t *env, lv_t *v) {
+lv_t *p_cdr(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
 
     rt_assert(c_list_length(v) == 1, le_arity, "cdr arity");
@@ -328,7 +328,7 @@ lv_t *p_cdr(lv_t *env, lv_t *v) {
     return L_CDAR(v);
 }
 
-lv_t *p_cons(lv_t *env, lv_t *v) {
+lv_t *p_cons(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
 
     rt_assert(c_list_length(v) == 2, le_arity, "cons arity");
@@ -338,7 +338,7 @@ lv_t *p_cons(lv_t *env, lv_t *v) {
 /**
  * generate a unique symbol.  This should probably
  */
-lv_t *p_gensym(lv_t *env, lv_t *v) {
+lv_t *p_gensym(lexec_t *exec, lv_t *v) {
     static int sym_no=0;
     char buffer[20];
 
@@ -353,7 +353,7 @@ lv_t *p_gensym(lv_t *env, lv_t *v) {
 /**
  * print a string
  */
-lv_t *p_display(lv_t *env, lv_t *v) {
+lv_t *p_display(lexec_t *exec, lv_t *v) {
     lv_t *str;
 
     assert(v && v->type == l_pair);
@@ -371,7 +371,7 @@ lv_t *p_display(lv_t *env, lv_t *v) {
  * given a string format specifier, create a new
  * string with the correct format
  */
-lv_t *p_format(lv_t *env, lv_t *v) {
+lv_t *p_format(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
     lv_t *current_arg = NULL;
     char *format, *current;
