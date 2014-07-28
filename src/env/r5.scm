@@ -2,6 +2,15 @@
 ; Create r5-ish environment
 ;
 
+(define #exec-success 0)
+(define #exec-arity 1)
+(define #exec-type 2)
+(define #exec-lookup 3)
+(define #exec-internal 4)
+(define #exec-syntax 5)
+(define #exec-raise 6)
+(define #exec-warn 7)
+
 (define + p-+)
 (define null? p-null?)
 (define symbol? p-symbol?)
@@ -24,5 +33,3 @@
 (define gensym p-gensym)
 (define display p-display)
 (define format p-format)
-
-(define plus p-+)

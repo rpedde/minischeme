@@ -49,6 +49,18 @@ typedef struct environment_list_t {
     lv_t *(*fn)(lexec_t *, lv_t *);
 } environment_list_t;
 
+typedef enum exec_stack_t {
+    es_env,    // environment stack
+    es_ex,     // exception stack
+    es_eval    // eval stack (for backtrace)
+} exec_stack_t;
+
+static int stack_offsets[] = {
+    offsetof(lexec_t, env_stack),
+    offsetof(lexec_t, ex_stack),
+    offsetof(lexec_t, eval_stack)
+};
+
 static jmp_buf *assert_handler = NULL;
 static int emit_on_error = 1;
 
@@ -83,21 +95,93 @@ static environment_list_t s_env_prim[] = {
     { NULL, NULL }
 };
 
-void c_set_top_context(jmp_buf *pjb) {
-    assert_handler = pjb;
+void lisp_set_ehandler(lexec_t *exec, void(*handler)(lexec_t *exec)) {
+    assert(exec);
+    assert(handler);
+
+    exec->ehandler = handler;
 }
 
-void c_set_emit_on_error(int v) {
-    emit_on_error = v;
+void null_ehandler(lexec_t *exec) {
 }
 
-void c_rt_assert(lisp_exception_t etype, char *msg) {
-    if(emit_on_error)
-        fprintf(stderr, "Error: %s\n", msg);
+void simple_ehandler(lexec_t *exec) {
+    assert(exec);
 
-    if(assert_handler) {
-        longjmp(*assert_handler, (int)etype);
+    fprintf(stderr, "Error: %s: %s\n",
+            lisp_exceptions_list[exec->exc]+3, exec->msg);
+}
+
+void default_ehandler(lexec_t *exec) {
+    int index = 0;
+    lstack_t *pstack;
+    char buffer[256]; /* FIXME: decent display or print */
+    int show_line;
+    lv_t *arg;
+    lisp_exception_t etype;
+    char *msg;
+
+    assert(exec);
+
+    msg = exec->msg;
+    etype = exec->exc;
+
+    /* do a full stack backtrace */
+    fprintf(stderr, "%s error: %s\n", lisp_exceptions_list[etype]+3, msg);
+
+    pstack = exec->eval_stack;
+
+    /* walk the execution stack backwards, dumping all the way */
+    while(pstack) {
+        show_line = 1;
+        assert(pstack->data);
+
+        arg = (lv_t*)pstack->data;
+
+        if(arg->type == l_fn) {
+            if(L_FN(arg)) {
+                strcpy(buffer, "built-in function");
+                show_line = 0;
+            } else {
+                strcpy(buffer, "lambda, declared at");
+            }
+        } else {
+            strcat(buffer, lisp_types_list[arg->type] + 2);
+        }
+
+        if(show_line)
+            sprintf(buffer + strlen(buffer), " %s:%d:%d",
+                    arg->file,
+                    arg->row,
+                    arg->col);
+
+        if(arg->bound)
+            sprintf(buffer + strlen(buffer), ", bound to '%s'",
+                    L_SYM(arg->bound));
+
+
+        fprintf(stderr, "%d: %s\n", index, buffer);
+        pstack = pstack->next;
+        index++;
+    }
+}
+
+
+void c_rt_assert(lexec_t *exec, lisp_exception_t etype, char *msg) {
+    jmp_buf *pjb;
+
+    assert(exec);
+    assert(exec->ex_stack);
+
+    exec->exc = etype;
+    exec->msg = msg;
+
+    if(exec->ex_stack) {
+        pjb = (exec->ex_stack)->data;
+        lisp_exec_pop_ex(exec);
+        longjmp(*pjb, (int)etype);
     } else {
+        default_ehandler(exec);
         exit((int)etype);
     }
 }
@@ -137,7 +221,7 @@ static int s_hash_item(lv_t *item) {
     if(item->type == l_sym)
 	return murmurhash2(L_SYM(item), strlen(L_SYM(item)), 0);
 
-    rt_assert(0, le_type, "unhashable data type");
+    assert(0);
 }
 
 void c_hash_walk(lv_t *hash, void(*callback)(lv_t *, lv_t *)) {
@@ -178,9 +262,8 @@ int c_hash_insert(lv_t *hash,
     hash_node_t *pnew;
     hash_node_t *result;
 
-    rt_assert(hash->type == l_hash, le_type, "hash operation on non-hash");
-    rt_assert(key->type == l_str || key->type == l_sym,
-              le_type, "invalid hash key type");
+    assert(hash->type == l_hash);
+    assert(key->type == l_str || key->type == l_sym);
 
     pnew=safe_malloc(sizeof(hash_node_t));
     pnew->key = s_hash_item(key);
@@ -189,7 +272,7 @@ int c_hash_insert(lv_t *hash,
 
     result = (hash_node_t *)rbsearch((void*)pnew, L_HASH(hash));
 
-    rt_assert(result, le_internal, "memory error");
+    assert(result);
 
     result->value = value;
     result->key_item = key;
@@ -201,9 +284,8 @@ int c_hash_delete(lv_t *hash, lv_t *key) {
     hash_node_t node_key;
     hash_node_t *result;
 
-    rt_assert(hash->type == l_hash, le_type, "hash operation on non-hash");
-    rt_assert(key->type == l_str || key->type == l_sym,
-              le_type, "invalid hash key type");
+    assert(hash->type == l_hash);
+    assert(key->type == l_str || key->type == l_sym);
 
     node_key.key = s_hash_item(key);
     result = (hash_node_t *)rbdelete(&node_key, L_HASH(hash));
@@ -223,7 +305,7 @@ lv_t *lisp_create_hash(void) {
     result->type = l_hash;
     L_HASH(result) = rbinit(s_hash_cmp, NULL);
 
-    rt_assert(L_HASH(result), le_internal, "memory error");
+    assert(L_HASH(result));
 
     return result;
 }
@@ -530,7 +612,7 @@ void lisp_dump_value(int fd, lv_t *v, int level) {
     }
 }
 
-lv_t *lisp_args_overlay(lv_t *formals, lv_t *args) {
+lv_t *lisp_args_overlay(lexec_t *exec, lv_t *formals, lv_t *args) {
     lv_t *pf, *pa;
     lv_t *env_layer;
 
@@ -570,20 +652,21 @@ lv_t *lisp_exec_fn(lexec_t *exec, lv_t *fn, lv_t *args) {
     assert(exec && fn && args);
     rt_assert(fn->type == l_fn, le_type, "not a function");
 
-    /* FIXME: push exec stack */
+    lisp_exec_push_eval(exec, fn);
+
     switch(L_FN_FTYPE(fn)) {
     case lf_native:
         result = L_FN(fn)(exec, args);
         break;
     case lf_lambda:
-        layer = lisp_args_overlay(L_FN_ARGS(fn), args);
+        layer = lisp_args_overlay(exec, L_FN_ARGS(fn), args);
         newenv = lisp_create_pair(layer, L_FN_ENV(fn));
         lisp_exec_push_env(exec, newenv);
         result = lisp_eval(exec, L_FN_BODY(fn));
         lisp_exec_pop_env(exec);
         break;
     case lf_macro:
-        layer = lisp_args_overlay(L_FN_ARGS(fn), args);
+        layer = lisp_args_overlay(exec, L_FN_ARGS(fn), args);
         newenv = lisp_create_pair(layer, L_FN_ENV(fn));
         lisp_exec_push_env(exec, newenv);
         macrofn = lisp_eval(exec, L_FN_BODY(fn));
@@ -593,6 +676,8 @@ lv_t *lisp_exec_fn(lexec_t *exec, lv_t *fn, lv_t *args) {
     default:
         assert(0);
     }
+
+    lisp_exec_pop_eval(exec);
 
     return result;
 }
@@ -1028,7 +1113,7 @@ lv_t *lisp_parse_file(char *file) {
     fclose(f);
 
     if(lst.error) {
-        c_rt_assert(le_syntax, "syntax error");
+        return NULL;
     }
     return lst.result;
 }
@@ -1057,7 +1142,7 @@ lv_t *lisp_parse_string(char *string) {
     yylex_destroy(scanner);
 
     if(lst.error) {
-        c_rt_assert(le_syntax, "syntax error");
+        return NULL;
     }
     return lst.result;
 }
@@ -1111,10 +1196,9 @@ lv_t *c_env_lookup(lv_t *env, lv_t *key) {
     lv_t *current;
     lv_t *result;
 
-    rt_assert(env->type == l_pair &&
-              L_CAR(env) &&
-              L_CAR(env)->type == l_hash, le_type,
-              "Not a valid environment");
+    assert(env->type == l_pair &&
+           L_CAR(env) &&
+           L_CAR(env)->type == l_hash);
 
     current=env;
     while(current) {
@@ -1209,13 +1293,37 @@ lv_t *lisp_copy_list(lv_t *v) {
 lexec_t *lisp_context_new(int scheme_revision) {
     lexec_t *ret = safe_malloc(sizeof(lexec_t));
 
+    memset(ret, 0, sizeof(lexec_t));
     ret->env = c_env_version(scheme_revision);
-    ret->exec_stack = lisp_create_null();
-    ret->env_stack = lisp_create_null();
-    ret->exc = 0;
-    ret->msg = NULL;
+    ret->ehandler = default_ehandler;
 
     return ret;
+}
+
+/**
+ * push a value into a stack type
+ */
+void lisp_exec_push(lexec_t *exec, exec_stack_t which, void *value) {
+    lstack_t *new_frame;
+    void *ptr = (void*)exec + stack_offsets[which];
+
+    new_frame = (lstack_t*)safe_malloc(sizeof(lstack_t));
+    new_frame->data = value;
+
+    new_frame->next = *(lstack_t**)ptr;
+    *(lstack_t**)ptr = new_frame;
+}
+
+/**
+ * and... pop a value from an exec stack type
+ */
+void *lisp_exec_pop(lexec_t *exec, exec_stack_t which) {
+    void *ptr = (void*)exec + stack_offsets[which];
+    void *retval;
+
+    retval = (*(lstack_t**)ptr)->data;
+    *(lstack_t**)ptr = (*(lstack_t**)ptr)->next;
+    return retval;
 }
 
 /**
@@ -1227,11 +1335,7 @@ void lisp_exec_push_env(lexec_t *exec, lv_t *env) {
     assert(exec);
     assert(env);
 
-    if(exec->env_stack && exec->env_stack->type == l_null) {
-        exec->env_stack = NULL;
-    }
-
-    exec->env_stack = lisp_create_pair(exec->env, exec->env_stack);
+    lisp_exec_push(exec, es_env, env);
     exec->env = env;
 }
 
@@ -1243,9 +1347,85 @@ void lisp_exec_pop_env(lexec_t *exec) {
     lv_t *new_env_stack;
 
     assert(exec);
-    assert(exec->env_stack && exec->env_stack->type == l_pair);
+    assert(exec->env_stack);
 
-    new_env_stack = L_CDR(exec->env_stack);
-    exec->env = L_CAR(exec->env_stack);
-    exec->env_stack = new_env_stack;
+    exec->env = lisp_exec_pop(exec, es_env);
+}
+
+/**
+ * given an execution context, push an exception
+ * handler on the exception stack
+ */
+void lisp_exec_push_ex(lexec_t *exec, jmp_buf *pjb) {
+    assert(exec);
+    assert(pjb);
+
+    lisp_exec_push(exec, es_ex, pjb);
+}
+
+/**
+ * pop an exception handlr
+ */
+void lisp_exec_pop_ex(lexec_t *exec) {
+    assert(exec);
+    assert(exec->ex_stack);
+
+    lisp_exec_pop(exec, es_ex);
+}
+
+/**
+ * push an evaluation stack item.  This could
+ * (should?) be a native lisp type -- extract out
+ * line, file, binding, etc, but it's way more convenient
+ * to just shove the evaluated fn.  Meh.
+ */
+void lisp_exec_push_eval(lexec_t *exec, lv_t *ev) {
+    assert(exec);
+    assert(ev);
+
+    lisp_exec_push(exec, es_eval, ev);
+}
+
+/**
+ * and the matching pop
+ */
+void lisp_exec_pop_eval(lexec_t *exec) {
+    assert(exec);
+    assert(exec->eval_stack);
+
+    lisp_exec_pop(exec, es_eval);
+}
+
+/**
+ * reset an existing context for start of evaluation
+ */
+void lisp_context_reset(lexec_t *exec) {
+    exec->ex_stack = NULL;
+    exec->eval_stack = NULL;
+    exec->exc = le_success;
+    exec->msg = NULL;
+}
+
+/**
+ * top level exec
+ */
+lv_t *lisp_execute(lexec_t *exec, lv_t *v) {
+    jmp_buf jb;
+    lv_t *result;
+
+    lisp_context_reset(exec);
+
+    lisp_exec_push_ex(exec, &jb);
+
+    if(setjmp(jb) == 0) {
+        result = c_sequential_eval(exec, v);
+        assert(exec->eval_stack == NULL);
+        assert(exec->exc == NULL);
+        return result;
+    }
+
+    if(exec->ehandler)
+        exec->ehandler(exec);
+
+    return NULL;
 }

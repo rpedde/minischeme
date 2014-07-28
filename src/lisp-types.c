@@ -26,3 +26,7 @@
 #define C(x) #x,
 char *lisp_types_list[] = { LISP_TYPES "l_max" };
 #undef C
+
+#define C(x) #x,
+char *lisp_exceptions_list[] = { LISP_EXCEPTIONS "le_max" };
+#undef C

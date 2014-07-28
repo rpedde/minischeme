@@ -11,10 +11,10 @@ int test_special_forms_quote(void *scaffold) {
     lv_t *r, *er;
     lexec_t *exec;
 
-    jmp_buf jb;
     int ex_result;
 
     exec = lisp_context_new(5);
+    lisp_set_ehandler(exec, null_ehandler);
 
     r = lisp_parse_string("(quote 1)");
     er = c_sequential_eval(exec, r);
@@ -28,15 +28,9 @@ int test_special_forms_quote(void *scaffold) {
     assert(er->type == l_pair);
     assert(c_list_length(er) == 3);
 
-    c_set_top_context(&jb);
-    if((ex_result = setjmp(jb)) == 0) {
-        r = c_sequential_eval(exec, lisp_parse_string("(quote 1 2 3)"));
-        /* we expect a runtime assert here, so this shouldn't run */
-        assert(0);
-    } else {
-        assert(ex_result == (int)le_arity);
-    }
-    c_set_top_context(NULL);
+    // expect arity exception
+    lisp_execute(exec, lisp_parse_string("(quote 1 2 3)"));
+    assert(exec->exc == le_arity);
 
     return 1;
 }
@@ -44,10 +38,10 @@ int test_special_forms_quote(void *scaffold) {
 int test_plus(void *scaffold) {
     lv_t *r;
     lexec_t *exec;
-    jmp_buf jb;
     int ex_result;
 
     exec = lisp_context_new(5);
+    lisp_set_ehandler(exec, null_ehandler);
 
     /* test base case */
     r = c_sequential_eval(exec, lisp_parse_string("(+)"));
@@ -55,15 +49,8 @@ int test_plus(void *scaffold) {
     assert(L_INT(r) == 0);
 
     /* test numeric adds only */
-    c_set_top_context(&jb);
-    if((ex_result = setjmp(jb)) == 0) {
-        r = c_sequential_eval(exec, lisp_parse_string("(+ 1 (quote arf))"));
-        /* we expect a runtime assert here, so this shouldn't run */
-        assert(0);
-    } else {
-        assert(ex_result == (int)le_type);
-    }
-    c_set_top_context(NULL);
+    lisp_execute(exec, lisp_parse_string("(+ 1 (quote arf))"));
+    assert(exec->exc == le_type);
 
     /* test simple int add */
     r = c_sequential_eval(exec, lisp_parse_string("(+ 1 2)"));

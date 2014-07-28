@@ -37,8 +37,15 @@ extern char *safe_strdup(char *str);
  * manipulation
  */
 extern lexec_t *lisp_context_new(int scheme_revision);
-extern void lisp_exec_push_env(lexec_t *exec, lv_t *env);
-extern void lisp_exec_pop_env(lexec_t *exec);
+extern void lisp_context_reset(lexec_t *exec);
+extern void lisp_exec_push_env(lexec_t *exec, lv_t *env);   // environment
+extern void lisp_exec_pop_env(lexec_t *exec);               // environment
+extern void lisp_exec_push_ex(lexec_t *exec, jmp_buf *pjb); // longjmp/exception
+extern void lisp_exec_pop_ex(lexec_t *exec);                // longjmp/exception
+extern void lisp_exec_push_eval(lexec_t *exec, lv_t *ev);   // eval context
+extern void lisp_exec_pop_eval(lexec_t *exec);              // eval context
+
+extern lv_t *lisp_execute(lexec_t *exec, lv_t *v);
 
 /**
  * utilities to build primitive types
@@ -68,7 +75,7 @@ extern lv_t *lisp_exec_fn(lexec_t *exec, lv_t *fn, lv_t *args);
 extern lv_t *lisp_begin(lexec_t *exec, lv_t *v);
 extern void lisp_stamp_value(lv_t *v, int row, int col, char *file);
 extern lv_t *lisp_copy_list(lv_t *v);
-extern lv_t *lisp_args_overlay(lv_t *formals, lv_t *args);
+extern lv_t *lisp_args_overlay(lexec_t *exec, lv_t *formals, lv_t *args);
 
 /**
  * hash utilities
@@ -110,13 +117,20 @@ extern lv_t *lisp_let(lexec_t *exec, lv_t *args, lv_t *expr);
  */
 #define rt_assert(a, type, msg) { \
     if(!(a)) { \
-        c_rt_assert(type, msg); \
+        c_rt_assert(exec, type, msg);            \
     } \
 }
 
-extern void c_rt_assert(lisp_exception_t etype, char *msg);
-extern void c_set_top_context(jmp_buf *pjb);
-extern void c_set_emit_on_error(int v);
+extern void null_ehandler(lexec_t *exec);
+extern void simple_ehandler(lexec_t *exec);
+extern void default_ehandler(lexec_t *exec);
+extern void lisp_set_ehandler(lexec_t *exec, void(*handler)(lexec_t *exec));
+
+extern void c_rt_assert(lexec_t *exec, lisp_exception_t etype, char *msg);
+
+
+//extern void c_set_top_context(jmp_buf *pjb);
+//extern void c_set_emit_on_error(int v);
 
 /**
  * environment stuff

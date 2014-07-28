@@ -17,15 +17,15 @@
   (lambda ()
     (assert
      (equal? '((a) b c d)
-	     (cons '(a) '(b c d))))))
+             (cons '(a) '(b c d))))))
 (define test-cons7
   (lambda ()
     (assert (equal? '("a" b c)
-		    (cons "a" '(b c))))))
+                    (cons "a" '(b c))))))
 (define test-cons8
   (lambda ()
     (assert (equal? '((a b) . c)
-		    (cons '(a b) c)))))
+                    (cons '(a b) c)))))
 
 (define test-pair?1
   (lambda ()

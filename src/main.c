@@ -33,8 +33,6 @@ static int is_nil(lv_t *v) {
     return(v && v->type == l_null);
 }
 
-static jmp_buf jb;
-
 void usage(char *a0) {
     printf("Usage: %s [options]\n\n", a0);
     printf("Valid options\n");
@@ -58,8 +56,6 @@ void repl(int level) {
 
     exec = lisp_context_new(5); /* get r5rs environment */
 
-    c_set_top_context(&jb);
-
     while(!quit) {
         snprintf(prompt, sizeof(prompt), "%d:%d> ", level, line);
 
@@ -75,18 +71,14 @@ void repl(int level) {
         if(!*cmd)
             continue;
 
-        if(setjmp(jb) == 0) {
-            parsed_value = lisp_parse_string(cmd);
-        } else {
-            parsed_value = NULL;
-        }
-
+        parsed_value = lisp_parse_string(cmd);
         if(!parsed_value) {
+            fprintf(stderr, "synax error\n");
             continue;
         }
 
         // e!
-        result = c_sequential_eval(exec, parsed_value);
+        result = lisp_execute(exec, parsed_value);
 
         // p!
         if(result && !is_nil(result)) {

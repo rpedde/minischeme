@@ -108,11 +108,8 @@ int run_scm_tests(char *testdir) {
     char buffer[4096];
     struct dirent *de;
     char *test;
-    jmp_buf jb;
     int success = 1;
     int err;
-
-    c_set_top_context(&jb);
 
     d = opendir(testdir);
     if(!d) {
@@ -123,6 +120,7 @@ int run_scm_tests(char *testdir) {
     while((de = readdir(d))) {
         if((strlen(de->d_name) > 4) && (!strncasecmp(de->d_name, "test", 4))) {
             exec = lisp_context_new(5);
+            lisp_set_ehandler(exec, null_ehandler);
 
             snprintf(buffer, sizeof(buffer), "(load \"%s/%s\")",
                      testdir, de->d_name);
@@ -144,10 +142,9 @@ int run_scm_tests(char *testdir) {
                     print_test_start(test);
                     snprintf(buffer, sizeof(buffer), "(%s)", test);
 
-                    if((err = setjmp(jb)) == 0) {
-                        result = c_sequential_eval(exec, lisp_parse_string(buffer));
-                        err = 0;
-                    }
+                    lisp_execute(exec, lisp_parse_string(buffer));
+
+                    err = exec->exc;
 
                     if(err == 0) {
                         print_test_result(SUCCESS);
@@ -172,9 +169,6 @@ int main(int argc, char *argv[]) {
     test_t *current = test_list;
     int success = 1;
     int result;
-
-    /* suppress error messages */
-    c_set_emit_on_error(0);
 
     printf("Testing.\n------------------------------------------------\n");
 

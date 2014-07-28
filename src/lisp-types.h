@@ -38,15 +38,31 @@ typedef enum lisp_type_t { LISP_TYPES l_max } lisp_type_t;
 
 extern char *lisp_types_list[];
 
-typedef enum lisp_exception_t {
-    le_arity = 1,      /* wrong arity for function */
-    le_type,           /* wrong type for operation */
-    le_lookup,         /* could not bind -- not in environment */
-    le_internal,       /* internal error (malloc?) */
-    le_syntax,         /* parse error */
-    le_raise,          /* deliberate raise */
-    le_warn            /* deliberate raise */
-} lisp_exception_t;
+#define LISP_EXCEPTIONS \
+    C(le_success) \
+    C(le_arity) \
+    C(le_type) \
+    C(le_lookup) \
+    C(le_internal) \
+    C(le_syntax) \
+    C(le_raise) \
+    C(le_warn)
+
+#define C(x) x,
+typedef enum lisp_exception_t { LISP_EXCEPTIONS le_max } lisp_exception_t;
+#undef C
+
+extern char *lisp_exceptions_list[];
+
+/* typedef enum lisp_exception_t { */
+/*     le_arity = 1,      /\* wrong arity for function *\/ */
+/*     le_type,           /\* wrong type for operation *\/ */
+/*     le_lookup,         /\* could not bind -- not in environment *\/ */
+/*     le_internal,       /\* internal error (malloc?) *\/ */
+/*     le_syntax,         /\* parse error *\/ */
+/*     le_raise,          /\* deliberate raise *\/ */
+/*     le_warn            /\* deliberate raise *\/ */
+/* } lisp_exception_t; */
 
 typedef enum lisp_funtype_t {
     lf_native,
@@ -56,12 +72,21 @@ typedef enum lisp_funtype_t {
 
 typedef struct lv_t lv_t;
 
+typedef struct lstack_t {
+    struct lstack_t *next;
+    void *data;
+} lstack_t;
+
 typedef struct lexec_t {
-    lv_t *env;
-    lv_t *exec_stack;
-    lv_t *env_stack;
-    lisp_exception_t exc;
+    lv_t *env;              // current working environment
+    lstack_t *env_stack;    // environment stack
+    lstack_t *ex_stack;     // exception handler stack
+    lstack_t *eval_stack;   // evaluation stack
+
+    /* is this really necessary? */
+    lisp_exception_t exc;   // current exception
     char *msg;
+    void (*ehandler)(struct lexec_t *exec);
 } lexec_t;
 
 typedef lv_t *(*lisp_method_t)(lexec_t *, lv_t*);
