@@ -14,7 +14,7 @@
 
 * [ ] zero? (library)
 * [ ] positive? (library)
-* [ ] neagative? (library)
+* [ ] negative? (library)
 * [ ] odd? (library)
 * [ ] even? (library)
 
