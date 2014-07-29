@@ -33,6 +33,7 @@
 #include "lisp-types.h"
 #include "primitives.h"
 #include "builtins.h"
+#include "ports.h"
 #include "murmurhash.h"
 #include "grammar.h"
 #include "tokenizer.h"
@@ -92,6 +93,11 @@ static environment_list_t s_env_prim[] = {
     { "p-gensym", p_gensym },
     { "p-display", p_display },
     { "p-format", p_format },
+    { "p-open-file", p_open_file },
+    { "p-port-filename", p_port_filename },
+    { "p-set-port-filename!", p_set_port_filename },
+    { "p-port-mode", p_port_mode },
+    { "p-file-port?", p_file_port_p },
     { NULL, NULL }
 };
 
@@ -356,6 +362,9 @@ lv_t *lisp_create_type(void *value, lisp_type_t type) {
     case l_fn:
         L_FN(result) = (lisp_method_t)value;
         break;
+    case l_port:
+        L_P_FP(result) = (FILE*)value;
+        break;
     default:
         assert(0);
         fprintf(stderr, "Bad type");
@@ -434,6 +443,21 @@ lv_t *lisp_create_native_fn(lisp_method_t value) {
     L_FN_ENV(fn) = NULL;
 
     return fn;
+}
+
+/**
+ * create a port type
+ *
+ * FIXME: needs fclose finalizer
+ */
+lv_t *lisp_create_port(FILE *fp, lv_t *filename, lv_t *mode) {
+    lv_t *p = lisp_create_type((void*)fp, l_port);
+
+    L_P_MODE(p) = mode;
+    L_P_FN(p) = filename;
+
+
+    return p;
 }
 
 

@@ -30,6 +30,7 @@
     C(l_pair) \
     C(l_hash) \
     C(l_null) \
+    C(l_port) \
     C(l_fn)
 
 #define C(x) x,
@@ -45,6 +46,7 @@ extern char *lisp_types_list[];
     C(le_lookup) \
     C(le_internal) \
     C(le_syntax) \
+    C(le_system) \
     C(le_raise) \
     C(le_warn)
 
@@ -106,6 +108,10 @@ typedef lv_t *(*lisp_method_t)(lexec_t *, lv_t*);
 #define L_FN_BODY(what) what->value.l.body
 #define L_FN_ENV(what)  what->value.l.env
 
+#define L_P_FP(what)    what->value.port.fp
+#define L_P_MODE(what)  what->value.port.mode
+#define L_P_FN(what)    what->value.port.filename
+
 #define L_CADR(what)    L_CAR(L_CDR(what))
 #define L_CAAR(what)    L_CAR(L_CAR(what))
 #define L_CDAR(what)    L_CDR(L_CAR(what))
@@ -155,6 +161,13 @@ typedef struct lisp_fn_t {
     lv_t *env;
 } lisp_fn_t;
 
+typedef struct lisp_port_t {
+    FILE *fp;
+    lv_t *mode;
+    lv_t *filename;
+    int buffered;
+} lisp_port_t;
+
 typedef struct lv_t {
     lisp_type_t type;
     int col;
@@ -170,6 +183,7 @@ typedef struct lv_t {
         lisp_pair_t p;
         lisp_hash_t h;
         lisp_fn_t l;
+        lisp_port_t port;
     } value;
 } lv_t;
 

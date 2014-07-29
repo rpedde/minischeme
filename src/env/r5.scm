@@ -8,8 +8,9 @@
 (define #exec-lookup 3)
 (define #exec-internal 4)
 (define #exec-syntax 5)
-(define #exec-raise 6)
-(define #exec-warn 7)
+(define #exec-system 6)
+(define #exec-raise 7)
+(define #exec-warn 8)
 
 (define + p-+)
 (define null? p-null?)
@@ -33,3 +34,10 @@
 (define gensym p-gensym)
 (define display p-display)
 (define format p-format)
+
+;; ports
+(define open-file p-open-file)
+(define port-filename p-port-filename)
+(define port-set-filename! p-port-set-filename!)
+(define port-mode p-port-mode)
+(define file-port? p-file-port?)
