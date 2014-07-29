@@ -14,6 +14,4 @@ level of stupid for some time.
 You may not have the acclimation necessary to operate at this level.
 Consider yourself warned.
 
-
-
-
+[Current state in re: r5rs](src/TODO.md)
