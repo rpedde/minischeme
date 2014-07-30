@@ -200,6 +200,12 @@
 * [ ] newline
 * [ ] write-char
 
+# conditional #
+
+* [ ] and (library)
+* [ ] or (library)
+* [ ] if
+
 # system interface #
 
 * [X] load
