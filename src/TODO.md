@@ -71,7 +71,7 @@
 * [X] cdr
 * [X] set-car!
 * [X] set-cdr
-* [ ] caar/cadr -- cdddar/cddddr (library)
+* [X] caar/cadr -- cdddar/cddddr (library)
 * [X] null?
 * [X] list? (library?)
 * [ ] list (library)
