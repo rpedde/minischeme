@@ -24,6 +24,7 @@ typedef union lexer_value_t {
     int64_t i_value;
     double f_value;
     char *s_value;
+    char ch_value;
     lv_t *lisp_value;
 } lexer_value_t;
 

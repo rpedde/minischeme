@@ -31,6 +31,7 @@
     C(l_hash) \
     C(l_null) \
     C(l_port) \
+    C(l_char) \
     C(l_fn)
 
 #define C(x) x,
@@ -93,6 +94,7 @@ typedef struct lexec_t {
 
 typedef lv_t *(*lisp_method_t)(lexec_t *, lv_t*);
 
+#define L_CHAR(what)    what->value.ch.value
 #define L_INT(what)     what->value.i.value
 #define L_FLOAT(what)   what->value.f.value
 #define L_BOOL(what)    what->value.b.value
@@ -119,6 +121,10 @@ typedef lv_t *(*lisp_method_t)(lexec_t *, lv_t*);
 #define L_CADAR(what)   L_CAR(L_CDR(L_CAR(what)))
 #define L_CADDDR(what)  L_CAR(L_CDR(L_CDR(L_CDR(what))))
 #define L_CADDR(what)   L_CAR(L_CDR(L_CDR(what)))
+
+typedef struct lisp_char_t {
+    char value;
+} lisp_char_t;
 
 typedef struct lisp_int_t {
     int64_t value;
@@ -175,6 +181,7 @@ typedef struct lv_t {
     lv_t *bound;
     char *file;
     union {
+        lisp_char_t ch;
         lisp_int_t i;
         lisp_float_t f;
         lisp_bool_t b;

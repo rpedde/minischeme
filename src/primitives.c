@@ -79,6 +79,7 @@ static environment_list_t s_env_prim[] = {
     { "p-list?", p_listp },
     { "p-pair?", p_pairp },
     { "p-equal?", p_equalp },
+    { "p-char?", p_charp },
     { "p-set-cdr!", p_set_cdr },
     { "p-set-car!", p_set_car },
     { "p-length", p_length },
@@ -344,6 +345,9 @@ lv_t *lisp_create_type(void *value, lisp_type_t type) {
     result->file = NULL;
 
     switch(type) {
+    case l_char:
+        L_CHAR(result) = *((char*)value);
+        break;
     case l_int:
         L_INT(result) = *((int64_t*)value);
         break;
@@ -372,6 +376,13 @@ lv_t *lisp_create_type(void *value, lisp_type_t type) {
     }
 
     return result;
+}
+
+/**
+ * typechecked wrapper around lisp_create_type for chars
+ */
+lv_t *lisp_create_char(char value) {
+    return lisp_create_type((void*)&value, l_char);
 }
 
 /**
@@ -567,6 +578,9 @@ int lisp_snprintf(char *buf, int len, lv_t *v) {
         else
             return snprintf(buf, len, "<built-in@%p>", v);
         break;
+    case l_char:
+        return snprintf(buf, len, "%c", L_CHAR(v));
+        break;
     default:
         // missing a type check.
         fprintf(stderr, "Crazy type: %d\n", v->type);
@@ -607,6 +621,9 @@ void lisp_dump_value(int fd, lv_t *v, int level) {
         break;
     case l_str:
         dprintf(fd, "\"%s\"", L_STR(v));
+        break;
+    case l_char:
+        dprintf(fd, "#\%02x", L_CHAR(v));
         break;
     case l_pair:
         dprintf(fd, "(");

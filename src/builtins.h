@@ -23,6 +23,7 @@
 
 extern lv_t *p_nullp(lexec_t *exec, lv_t *v);
 extern lv_t *p_symbolp(lexec_t *exec, lv_t *v);
+extern lv_t *p_charp(lexec_t *exec, lv_t * v);
 extern lv_t *p_atomp(lexec_t *exec, lv_t *v);
 extern lv_t *p_consp(lexec_t *exec, lv_t *v);
 extern lv_t *p_listp(lexec_t *exec, lv_t *v);

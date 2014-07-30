@@ -59,6 +59,16 @@ lv_t *p_atomp(lexec_t *exec, lv_t *v) {
     return lisp_create_bool(0);
 }
 
+lv_t *p_charp(lexec_t *exec, lv_t *v) {
+    assert(v && v->type == l_pair);
+    rt_assert(c_list_length(v) == 1, le_arity, "wrong arity");
+    lv_t *a0 = L_CAR(v);
+
+    if(a0->type != l_char)
+        return lisp_create_bool(0);
+    return lisp_create_bool(1);
+}
+
 lv_t *p_consp(lexec_t *exec, lv_t *v) {
     assert(v && v->type == l_pair);
     rt_assert(c_list_length(v) == 1, le_arity, "wrong arity");

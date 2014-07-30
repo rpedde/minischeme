@@ -41,3 +41,6 @@
 (define port-set-filename! p-port-set-filename!)
 (define port-mode p-port-mode)
 (define file-port? p-file-port?)
+
+;; char
+(define char? p-char?)

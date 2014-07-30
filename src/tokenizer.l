@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <assert.h>
 
 #include "grammar.h"
 #include "lisp-types.h"
@@ -35,6 +36,9 @@
 #define YY_USER_INIT yycolumn = 0;
 
 
+extern char tok_hexint(char *str);
+extern char tok_char_special(char *str);
+
 %}
 
 %option yylineno
@@ -44,6 +48,8 @@
 
 qstring \"[^\"\n]*[\"\n]
 symbol [^\t\r\n \)\(,`']*
+special_chars (nul|soh|stx|etx|eot|enq|ack|bel|bs|ht|lf|vt|ff|cr|so|si|dle|dc1|dc2|dc3|dc4|nak|syn|etb|can|em|sub|esc|fs|gs|rs|us|del|altmode|backnext|backspace|call|linefeed|page|return|rubout|space|tab)
+
 
 %%
 [\t ]+
@@ -53,6 +59,11 @@ symbol [^\t\r\n \)\(,`']*
 \(                             { return(OPENPAREN); }
 \)                             { return(CLOSEPAREN); }
 
+#\\{special_chars}             { yylval->ch_value = tok_char_special(&yytext[2]); return(CHAR); }
+
+#\\x[0-9A-Fa-f][0-9A-Fa-f]     { yylval->ch_value = tok_hexint(&yytext[3]); return(CHAR); }
+
+#\\.                           { yylval->ch_value = yytext[2]; return(CHAR); }
 \.                             { return(DOT); }
 '                              { return(QUOTE); }
 ,@                             { return(UNQUOTESPLICING); }
@@ -87,4 +98,79 @@ void yyerror(char *format, ...) {
     va_end(args);
 
     fprintf(stdout, "\n");
+}
+
+char tok_hexint(char *str) {
+    int val;
+    int tokens;
+
+    tokens = sscanf(str, "%02x", &val);
+    if(tokens != 1)
+        assert(0);
+
+    return (char)val;
+}
+
+char tok_char_special(char *str) {
+    typedef struct toklist_t {
+        char *string;
+        char result;
+    } toklist_t;
+
+    toklist_t *current;
+    toklist_t toklist[] = {
+        { "nul", 0 },
+        { "soh", 1 },
+        { "stx", 2 },
+        { "etx", 3 },
+        { "eot", 4 },
+        { "enq", 5 },
+        { "ack", 6 },
+        { "bel", 7 },
+        { "bs", 8 },
+        { "ht", 9 },
+        { "lf", 10 },
+        { "vt", 11 },
+        { "ff", 12 },
+        { "cr", 13 },
+        { "so", 14 },
+        { "si", 15 },
+        { "dle", 16 },
+        { "dc1", 17 },
+        { "dc2", 18 },
+        { "dc3", 19 },
+        { "dc4", 20 },
+        { "nak", 21 },
+        { "syn", 22 },
+        { "etb", 23 },
+        { "can", 24 },
+        { "em", 25 },
+        { "sub", 26 },
+        { "esc", 27 },
+        { "fs", 28 },
+        { "gs", 29 },
+        { "rs", 30 },
+        { "us", 31 },
+        { "del", 127 },
+        { "altmode", 27 },
+        { "backnext", 31 },
+        { "backspace", 8 },
+        { "call", 26 },
+        { "linefeed", 10 },
+        { "page", 12 },
+        { "return", 13 },
+        { "rubout", 127 },
+        { "space", 32 },
+        { "tab", 9 },
+        { NULL, 0 }
+    };
+
+    current = &toklist[0];
+    while(current->string && (strcasecmp(current->string, str)))
+        current++;
+
+    if(current->string)
+        return current->result;
+
+    assert(0);
 }

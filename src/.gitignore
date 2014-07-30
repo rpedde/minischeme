@@ -14,3 +14,4 @@ test-definitions.h
 grammar.c
 grammar.h
 grammar.out
+gc.supp
