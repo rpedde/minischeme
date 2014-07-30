@@ -95,12 +95,12 @@
 
 # chars #
 
-* [ ] char?
-* [ ] char=?
-* [ ] char<?
-* [ ] char>?
-* [ ] char<=?
-* [ ] char>=?
+* [X] char?
+* [X] char=?
+* [X] char<?
+* [X] char>?
+* [X] char<=?
+* [X] char>=?
 
 * [ ] char-ci=? (library)
 * [ ] char-ci<? (library)
@@ -114,7 +114,7 @@
 * [ ] char-upper-case? (library)
 * [ ] char-lower-case? (library)
 
-* [ ] char->integer
+* [X] char->integer
 * [ ] integer->char
 
 * [ ] char-upcase (library)

@@ -32,12 +32,14 @@
 
 #include "lisp-types.h"
 #include "primitives.h"
-#include "builtins.h"
-#include "ports.h"
 #include "murmurhash.h"
 #include "grammar.h"
 #include "tokenizer.h"
 #include "redblack.h"
+
+#include "builtins.h"
+#include "ports.h"
+#include "char.h"
 
 typedef struct hash_node_t {
     uint32_t key;
@@ -79,7 +81,6 @@ static environment_list_t s_env_prim[] = {
     { "p-list?", p_listp },
     { "p-pair?", p_pairp },
     { "p-equal?", p_equalp },
-    { "p-char?", p_charp },
     { "p-set-cdr!", p_set_cdr },
     { "p-set-car!", p_set_car },
     { "p-length", p_length },
@@ -94,11 +95,23 @@ static environment_list_t s_env_prim[] = {
     { "p-gensym", p_gensym },
     { "p-display", p_display },
     { "p-format", p_format },
+
+    // port functions
     { "p-open-file", p_open_file },
     { "p-port-filename", p_port_filename },
     { "p-set-port-filename!", p_set_port_filename },
     { "p-port-mode", p_port_mode },
     { "p-file-port?", p_file_port_p },
+
+    // char functions
+    { "p-char?", p_charp },
+    { "p-char=?", p_charequalp },
+    { "p-char<?", p_charltp },
+    { "p-char>?", p_chargtp },
+    { "p-char<=?", p_charltep },
+    { "p-char>=?", p_chargtep },
+    { "p-char->integer", p_char_integer },
+
     { NULL, NULL }
 };
 

@@ -44,3 +44,9 @@
 
 ;; char
 (define char? p-char?)
+(define char=? p-char=?)
+(define char<? p-char<?)
+(define char>? p-char>?)
+(define char<=? p-char<=?)
+(define char>=? p-char>=?)
+(define char->integer p-char->integer)
