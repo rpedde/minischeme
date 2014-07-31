@@ -204,7 +204,7 @@
 
 * [ ] and (library)
 * [ ] or (library)
-* [ ] if
+* [X] if
 
 # system interface #
 
