@@ -6,12 +6,249 @@ Playing around with building a r5rs-ish scheme.  In addition to being
 a stupid re-implementation of the wheel, it also suffers from not
 being very round.
 
-I don't encourage anyone to look at this -- this amount of stupid
-concentrated in one place may very well cause physical discomfort (or
-even death).  I'm comfortable with it, I've been operating at this
-level of stupid for some time.
+That said, this is general status toward a r[57]ish scheme:
 
-You may not have the acclimation necessary to operate at this level.
-Consider yourself warned.
+## equivalence predicates ##
 
-[Current state in re: r5rs](src/TODO.md)
+* [ ] eqv?
+* [ ] eq?
+* [ ] equal?
+
+## numeric ##
+
+* [ ] integer?
+* [ ] float?
+
+* [ ] exact?
+* [ ] inexact?
+
+* [ ] zero? (library)
+* [ ] positive? (library)
+* [ ] negative? (library)
+* [ ] odd? (library)
+* [ ] even? (library)
+
+* [ ] max (library)
+* [ ] min (library)
+* [ ] >
+* [ ] <
+* [ ] <=
+* [ ] >=
+* [ ] =
+
+* [X] +
+* [ ] *
+* [ ] -
+* [ ] /
+
+* [ ] abs (library)
+* [ ] quotient
+* [ ] remainder
+* [ ] modulo
+
+* [ ] gcd (library)
+* [ ] lcm (library)
+
+* [ ] floor
+* [ ] ceiling
+* [ ] truncate
+* [ ] round
+
+* [ ] exp
+* [ ] log
+* [ ] sin
+* [ ] cos
+* [ ] tan
+* [ ] asin
+* [ ] acos
+* [ ] atan
+* [ ] sqrt
+* [ ] expt
+
+* [ ] number->string
+* [ ] string->number
+
+## boolean ##
+
+* [X] not
+* [ ] boolean?
+
+## pairs and lists ##
+
+* [X] pair?
+* [X] cons
+* [X] car
+* [X] cdr
+* [X] set-car!
+* [X] set-cdr
+* [X] caar/cadr -- cdddar/cddddr (library)
+* [X] null?
+* [X] list? (library?)
+* [ ] list (library)
+* [ ] length (library?)
+* [ ] append (library)
+* [ ] reverse (library)
+* [ ] tail-list (library)
+* [ ] list-ref (library)
+* [ ] memq (library)
+* [ ] memv (library)
+* [ ] member (library)
+* [ ] assq (library)
+* [ ] assv (library)
+* [ ] assoc (library)
+
+## symbols ##
+
+* [X] symbol?
+* [ ] symbol->string
+* [ ] string->symbol
+
+## chars ##
+
+* [X] char?
+* [X] char=?
+* [X] char<?
+* [X] char>?
+* [X] char<=?
+* [X] char>=?
+
+* [ ] char-ci=? (library)
+* [ ] char-ci<? (library)
+* [ ] char-ci>? (library)
+* [ ] char-ci<=? (library)
+* [ ] char-ci>=? (library)
+
+* [ ] char-alphabetic? (library)
+* [ ] char-numeric? (library)
+* [ ] char-whitespace? (library)
+* [ ] char-upper-case? (library)
+* [ ] char-lower-case? (library)
+
+* [X] char->integer
+* [ ] integer->char
+
+* [ ] char-upcase (library)
+* [ ] char-downcase (library)
+
+## strings ##
+
+* [X] string?
+
+* [ ] make-string
+
+* [ ] string (library)
+* [ ] string-length
+* [ ] string-ref
+* [ ] string-set!
+
+* [ ] string=? (library)
+* [ ] string-ci=? (library)
+
+* [ ] string<? (library)
+* [ ] string>? (library)
+* [ ] string<=? (library)
+* [ ] string>=? (library)
+* [ ] string-ci<? (library)
+* [ ] string-ci>? (library)
+* [ ] string-ci<=? (library)
+* [ ] string-ci>=? (library)
+
+* [ ] substring (library)
+* [ ] string-append (library)
+
+* [ ] string->list (library)
+* [ ] list->string (library)
+
+* [ ] string-copy (library)
+* [ ] string-fill! (library)
+
+## control ##
+
+* [ ] procedure?
+* [ ] apply
+* [ ] map (library)
+* [ ] for-each (library)
+* [ ] force (library)
+* [ ] call-with-current-continuation
+* [ ] values
+* [ ] call-with-values
+* [ ] dynamic-wind
+
+## eval ##
+
+* [ ] eval
+* [X] scheme-report-environment
+* [X] null-environment
+* [ ] interaction-environment
+
+## ports ##
+
+* [ ] call-with-input-file (library)
+* [ ] call-with-output-file (library)
+* [ ] input-port?
+* [ ] output-port?
+* [ ] current-input-port
+* [ ] with-input-from-file
+* [ ] with-output-to-file
+* [ ] open-input-file
+* [ ] open-output-file
+* [ ] close-input-port
+* [ ] close-output-port
+
+## input ##
+
+* [ ] read
+* [ ] read-char
+* [ ] peek-char
+* [ ] eof-object?
+* [ ] char-ready?
+
+## output ##
+
+* [ ] write (machine-readable)
+* [ ] display (human readable)
+* [ ] newline
+* [ ] write-char
+
+## conditional ##
+
+* [ ] and (library)
+* [ ] or (library)
+* [X] if
+
+## system interface ##
+
+* [X] load
+* [ ] transcript-on
+* [ ] transcript-off
+
+## SRFI-69 ##
+
+* [ ] make-hash-table
+* [ ] hash-table?
+* [ ] alist->hash-table
+
+* [ ] hash-table-equivalence-function
+* [ ] hash-table-hash-function
+
+* [ ] hash-table-ref
+* [ ] hash-table-ref/default
+* [ ] hash-table-set!
+* [ ] hash-table-delete!
+* [ ] hash-table-exists?
+* [ ] hash-table-update!
+* [ ] hash-table-update!/default
+
+* [ ] hash-table-size
+* [ ] hash-table-keys
+* [ ] hash-table-values
+* [ ] hash-table-walk
+* [ ] hash-table-fold
+* [ ] hash-table->alist
+* [ ] hash-table-copy
+* [ ] hash-table-merge!
+
+* [ ] hash
+* [ ] string-hash
+* [ ] string-ci-hash
+* [ ] hash-by-identity
