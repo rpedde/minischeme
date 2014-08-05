@@ -490,8 +490,10 @@ lv_t *lisp_create_port(FILE *fp, lv_t *filename, lv_t *mode) {
  */
 lv_t *lisp_create_macro(lexec_t *exec, lv_t *formals, lv_t *form) {
     assert(exec);
-    rt_assert(formals->type == l_pair || formals->type == l_null, le_type,
-              "formals must be a list");
+    rt_assert(formals->type == l_pair ||
+              formals->type == l_null ||
+              formals->type == l_sym, le_type,
+              "formals must be a list, symbol, or ()");
 
     lv_t *fn = lisp_create_type(NULL, l_fn);
     L_FN_FTYPE(fn) = lf_macro;
@@ -509,8 +511,10 @@ lv_t *lisp_create_macro(lexec_t *exec, lv_t *formals, lv_t *form) {
 lv_t *lisp_create_lambda(lexec_t *exec, lv_t *formals, lv_t *body) {
     assert(exec);
 
-    rt_assert(formals->type == l_pair || formals->type == l_null, le_type,
-              "formals must be a list");
+    rt_assert(formals->type == l_pair ||
+              formals->type == l_null ||
+              formals->type == l_sym, le_type,
+              "formals must be a list, symbol, or ()");
 
     lv_t *fn = lisp_create_type(NULL, l_fn);
     L_FN_FTYPE(fn) = lf_lambda;
@@ -670,29 +674,48 @@ lv_t *lisp_args_overlay(lexec_t *exec, lv_t *formals, lv_t *args) {
     lv_t *pf, *pa;
     lv_t *env_layer;
 
-    assert(formals->type == l_pair || formals->type == l_null);
-    assert(args->type == l_pair || args->type == l_null);
+    assert(formals->type == l_pair ||
+           formals->type == l_null ||
+           formals->type == l_sym);
+    assert(args->type == l_pair || args->type == l_null || args->type == l_sym);
 
     env_layer = lisp_create_hash();
     pf = formals;
     pa = args;
 
-    rt_assert(formals->type == l_pair ||
-              (formals->type == l_null && c_list_length(args) == 0),
-              le_arity, "arity");
+    /* no args */
+    if(pf->type == l_null) {
+        rt_assert(c_list_length(pa) == 0, le_arity, "too many arguments");
+        return env_layer;
+    }
 
+    /* single arg gets the whole list */
+    if(pf->type == l_sym) {
+        c_hash_insert(env_layer, pf, lisp_copy_list(pa));
+        return env_layer;
+    }
+
+    /* walk through the formal list, matching to args */
     while(pf && L_CAR(pf)) {
-        if(L_CAR(pf)->type == l_sym &&
-           !strcmp(L_SYM(L_CAR(pf)), "&rest")) {
-            /* assign the rest to a list and done! */
-            c_hash_insert(env_layer, L_CADR(pf), lisp_copy_list(pa));
-            return env_layer;
-        }
-        rt_assert(pa && L_CAR(pa), le_arity, "arity");
+        rt_assert(pa && L_CAR(pa), le_arity, "not enough arguments");
         c_hash_insert(env_layer, L_CAR(pf), L_CAR(pa));
         pf = L_CDR(pf);
         pa = L_CDR(pa);
+
+        if(pf && pf->type == l_sym) {
+            /* improper list */
+            if(!pa) {
+                c_hash_insert(env_layer, pf, lisp_create_null());
+            } else {
+                c_hash_insert(env_layer, pf, lisp_copy_list(pa));
+            }
+            return env_layer;
+        }
+
+        rt_assert(!pf || pf->type == l_pair, le_type, "unexpected formal type");
     }
+
+    rt_assert(!pa, le_arity, "too many arguments");
 
     return env_layer;
 }
@@ -922,7 +945,7 @@ lv_t *lisp_eval(lexec_t *exec, lv_t *v) {
                 return lisp_define(exec, a1, lisp_create_macro(exec, a2, a3));
             } else if(!strcmp(L_SYM(L_CAR(v)), "begin")) {
                 rt_assert(L_CADR(v), le_arity, "begin arity");
-                return lisp_begin(exec, L_CADR(v));
+                return lisp_begin(exec, L_CDR(v));
             } else if(!strcmp(L_SYM(L_CAR(v)), "quasiquote")) {
                 rt_assert(
                     L_CDR(v)->type == l_null ||
