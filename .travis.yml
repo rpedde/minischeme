@@ -4,5 +4,6 @@ before_script:
 - sudo apt-get install libgc-dev
 - sudo apt-get install libreadline-dev
 - sudo apt-get install lemon
+- sudo apt-get install libgmp-dev
 
 script: ./autogen.sh && ./configure && make check
