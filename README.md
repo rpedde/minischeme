@@ -16,11 +16,11 @@ That said, this is general status toward a r[57]ish scheme:
 
 ## numeric ##
 
-* [ ] integer?
-* [ ] float?
+* [X] integer?
+* [X] float?
 
-* [ ] exact?
-* [ ] inexact?
+* [X] exact?
+* [X] inexact?
 
 * [ ] zero? (library)
 * [ ] positive? (library)
@@ -30,16 +30,16 @@ That said, this is general status toward a r[57]ish scheme:
 
 * [ ] max (library)
 * [ ] min (library)
-* [ ] >
-* [ ] <
-* [ ] <=
-* [ ] >=
-* [ ] =
+* [X] >
+* [X] <
+* [X] <=
+* [X] >=
+* [X] =
 
 * [X] +
-* [ ] *
-* [ ] -
-* [ ] /
+* [X] *
+* [X] -
+* [X] /
 
 * [ ] abs (library)
 * [ ] quotient
@@ -206,7 +206,7 @@ That said, this is general status toward a r[57]ish scheme:
 ## output ##
 
 * [ ] write (machine-readable)
-* [ ] display (human readable)
+* [X] display (human readable) [ not quite right... ]
 * [ ] newline
 * [ ] write-char
 
