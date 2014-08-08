@@ -21,6 +21,8 @@
 #ifndef __LISP_TYPES_H__
 #define __LISP_TYPES_H__
 
+#include <gmp.h>
+
 #define LISP_TYPES \
     C(l_int) \
     C(l_float) \
@@ -49,7 +51,8 @@ extern char *lisp_types_list[];
     C(le_syntax) \
     C(le_system) \
     C(le_raise) \
-    C(le_warn)
+    C(le_warn) \
+    C(le_div)
 
 #define C(x) x,
 typedef enum lisp_exception_t { LISP_EXCEPTIONS le_max } lisp_exception_t;
@@ -94,25 +97,25 @@ typedef struct lexec_t {
 
 typedef lv_t *(*lisp_method_t)(lexec_t *, lv_t*);
 
-#define L_CHAR(what)    what->value.ch.value
-#define L_INT(what)     what->value.i.value
-#define L_FLOAT(what)   what->value.f.value
-#define L_BOOL(what)    what->value.b.value
-#define L_SYM(what)     what->value.s.value
-#define L_STR(what)     what->value.c.value
-#define L_CDR(what)     what->value.p.cdr
-#define L_CAR(what)     what->value.p.car
-#define L_HASH(what)    what->value.h.value
+#define L_CHAR(what)    (what)->value.ch.value
+#define L_INT(what)     (what)->value.i.value
+#define L_FLOAT(what)   (what)->value.f.value
+#define L_BOOL(what)    (what)->value.b.value
+#define L_SYM(what)     (what)->value.s.value
+#define L_STR(what)     (what)->value.c.value
+#define L_CDR(what)     (what)->value.p.cdr
+#define L_CAR(what)     (what)->value.p.car
+#define L_HASH(what)    (what)->value.h.value
 
-#define L_FN(what)      what->value.l.fn
-#define L_FN_FTYPE(what) what->value.l.ftype
-#define L_FN_ARGS(what) what->value.l.formals
-#define L_FN_BODY(what) what->value.l.body
-#define L_FN_ENV(what)  what->value.l.env
+#define L_FN(what)      (what)->value.l.fn
+#define L_FN_FTYPE(what) (what)->value.l.ftype
+#define L_FN_ARGS(what) (what)->value.l.formals
+#define L_FN_BODY(what) (what)->value.l.body
+#define L_FN_ENV(what)  (what)->value.l.env
 
-#define L_P_FP(what)    what->value.port.fp
-#define L_P_MODE(what)  what->value.port.mode
-#define L_P_FN(what)    what->value.port.filename
+#define L_P_FP(what)    (what)->value.port.fp
+#define L_P_MODE(what)  (what)->value.port.mode
+#define L_P_FN(what)    (what)->value.port.filename
 
 #define L_CADR(what)    L_CAR(L_CDR(what))
 #define L_CAAR(what)    L_CAR(L_CAR(what))
@@ -127,11 +130,11 @@ typedef struct lisp_char_t {
 } lisp_char_t;
 
 typedef struct lisp_int_t {
-    int64_t value;
+    mpz_t value;
 } lisp_int_t;
 
 typedef struct lisp_float_t {
-    double value;
+    mpf_t value;
 } lisp_float_t;
 
 typedef struct lisp_bool_t {

@@ -22,7 +22,7 @@ int test_int_parsing(void *scaffold) {
     result = L_CAR(lisp_parse_string("7"));
 
     assert(result->type == l_int);
-    assert(L_INT(result) == 7);
+    assert(int_value(result) == 7);
     return 1;
 }
 
@@ -32,12 +32,13 @@ int test_float_parsing(void *scaffold) {
     result = L_CAR(lisp_parse_string("1."));
 
     assert(result->type == l_float);
-    assert(L_FLOAT(result) == 1.0);
+    assert(float_value(result) == 1.0);
 
-    result = L_CAR(lisp_parse_string(".1"));
+    /* have to use an exactly representable number! */
+    result = L_CAR(lisp_parse_string(".125"));
 
     assert(result->type == l_float);
-    assert(L_FLOAT(result) == 0.1);
+    assert(float_value(result) == 0.125);
     return 1;
 }
 
@@ -72,21 +73,21 @@ int test_list_parsing(void *scaffold) {
     result = L_CAR(lisp_parse_string("(1)"));
     assert(result->type == l_pair);
     assert(L_CAR(result)->type == l_int);
-    assert(L_INT(L_CAR(result)) == 1);
+    assert(int_value(L_CAR(result)) == 1);
     assert(L_CDR(result) == NULL);
 
     result = L_CAR(lisp_parse_string("(1 . ())"));
     assert(result->type == l_pair);
     assert(L_CAR(result)->type == l_int);
-    assert(L_INT(L_CAR(result)) == 1);
+    assert(int_value(L_CAR(result)) == 1);
     assert(L_CDR(result) == NULL);
 
     result = L_CAR(lisp_parse_string("(1 . 1)"));
     assert(result->type == l_pair);
     assert(L_CAR(result)->type == l_int);
     assert(L_CDR(result)->type == l_int);
-    assert(L_INT(L_CAR(result)) == 1);
-    assert(L_INT(L_CDR(result)) == 1);
+    assert(int_value(L_CAR(result)) == 1);
+    assert(int_value(L_CDR(result)) == 1);
 
     result = L_CAR(lisp_parse_string("(1 1)"));
     assert(result->type == l_pair);
@@ -94,8 +95,8 @@ int test_list_parsing(void *scaffold) {
     assert(L_CDR(result)->type == l_pair)
     assert(L_CAR(L_CDR(result))->type == l_int);;
     assert(L_CDR(L_CDR(result)) == NULL);
-    assert(L_INT(L_CAR(result)) == 1);
-    assert(L_INT(L_CAR(L_CDR(result))) == 1);
+    assert(int_value(L_CAR(result)) == 1);
+    assert(int_value(L_CAR(L_CDR(result))) == 1);
 
 
     result = L_CAR(lisp_parse_string("(1 . (1 . ()))"));
@@ -104,7 +105,7 @@ int test_list_parsing(void *scaffold) {
     assert(L_CDR(result)->type == l_pair)
     assert(L_CAR(L_CDR(result))->type == l_int);;
     assert(L_CDR(L_CDR(result)) == NULL);
-    assert(L_INT(L_CAR(result)) == 1);
-    assert(L_INT(L_CAR(L_CDR(result))) == 1);
+    assert(int_value(L_CAR(result)) == 1);
+    assert(int_value(L_CAR(L_CDR(result))) == 1);
     return 1;
 }

@@ -40,6 +40,7 @@
 #include "builtins.h"
 #include "ports.h"
 #include "char.h"
+#include "math.h"
 
 typedef struct hash_node_t {
     uint32_t key;
@@ -64,6 +65,7 @@ static int stack_offsets[] = {
     offsetof(lexec_t, eval_stack)
 };
 
+static int gmp_initialized = 0;
 static jmp_buf *assert_handler = NULL;
 static int emit_on_error = 1;
 
@@ -112,8 +114,43 @@ static environment_list_t s_env_prim[] = {
     { "p-char>=?", p_chargtep },
     { "p-char->integer", p_char_integer },
 
+    // math functions
+    { "p-integer?", p_integerp },
+    { "p-float?" , p_floatp },
+    { "p-exact?" , p_exactp },
+    { "p-inexact?", p_inexactp },
+    { "p->", p_gt },
+    { "p-<", p_lt },
+    { "p->=", p_gte },
+    { "p-<=", p_lte },
+    { "p-=", p_eq },
+    { "p-+", p_plus },
+    { "p--", p_minus },
+    { "p-*", p_mul },
+    { "p-/", p_div },
     { NULL, NULL }
 };
+
+/**
+ * do initial initialization of gmp library.  set allocators,
+ * etc.
+ */
+void *gmp_realloc_wrapper(void *ptr, size_t old_size, size_t new_size) {
+    return GC_realloc(ptr, new_size);
+}
+
+void gmp_free_wrapper(void *ptr, size_t size) {
+    GC_free(ptr);
+}
+
+void maybe_initialize_gmp(void) {
+    if(!gmp_initialized) {
+        mp_set_memory_functions(GC_malloc,
+                                gmp_realloc_wrapper,
+                                gmp_free_wrapper);
+        gmp_initialized = 1;
+    }
+}
 
 void lisp_set_ehandler(lexec_t *exec, void(*handler)(lexec_t *exec)) {
     assert(exec);
@@ -362,10 +399,12 @@ lv_t *lisp_create_type(void *value, lisp_type_t type) {
         L_CHAR(result) = *((char*)value);
         break;
     case l_int:
-        L_INT(result) = *((int64_t*)value);
+        mpz_init(L_INT(result));
+        mpz_set_si(L_INT(result), *(int64_t *)value);
         break;
     case l_float:
-        L_FLOAT(result) = *((double*)value);
+        mpf_init(L_FLOAT(result));
+        mpf_set_d(L_FLOAT(result), *(double*)value);
         break;
     case l_bool:
         L_BOOL(result) = *((int*)value);
@@ -443,10 +482,46 @@ lv_t *lisp_create_float(double value) {
 }
 
 /**
+ * lisp_create_type for float, using the string parser
+ * (to be able to represent arbitrary precision).  This
+ * is the preferred interface
+ */
+lv_t *lisp_create_float_str(char *value) {
+    double v = 0;
+    int flag;
+
+    lv_t *new_value = lisp_create_type((void*)&v, l_float);
+
+    /* now parse the string */
+    flag = mpf_set_str(L_FLOAT(new_value), value, 10);
+    assert(!flag);
+
+    return new_value;
+}
+
+/**
  * typechecked wrapper around lisp_create_type for ints
  */
 lv_t *lisp_create_int(int64_t value) {
     return lisp_create_type((void*)&value, l_int);
+}
+
+/**
+ * lisp_create_type for int, using the string parser
+ * (to be able to represent arbitrary precision).  This
+ * is the preferred interface
+ */
+lv_t *lisp_create_int_str(char *value) {
+    int64_t v = 0;
+    int flag;
+
+    lv_t *new_value = lisp_create_type((void*)&v, l_int);
+
+    /* now parse the string */
+    flag = mpz_set_str(L_INT(new_value), value, 10);
+    assert(!flag);
+
+    return new_value;
 }
 
 /**
@@ -541,9 +616,11 @@ int lisp_snprintf(char *buf, int len, lv_t *v) {
     case l_null:
         return snprintf(buf, len, "()");
     case l_int:
-        return snprintf(buf, len, "%" PRIu64, L_INT(v));
+        /* return snprintf(buf, len, "%" PRIu64, L_INT(v)); */
+        return gmp_snprintf(buf, len, "%Zd", L_INT(v));
     case l_float:
-        return snprintf(buf, len, "%0.16g", L_FLOAT(v));
+        /* return snprintf(buf, len, "%0.16g", L_FLOAT(v)); */
+        return gmp_snprintf(buf, len, "%Fg", L_FLOAT(v));
     case l_bool:
         return snprintf(buf, len, "%s", L_BOOL(v) ? "#t": "#f");
     case l_sym:
@@ -1150,17 +1227,6 @@ lv_t *c_env_version(int version) {
 }
 
 /**
- * promote a numeric to a higher-order numeric
- */
-lv_t *numeric_promote(lv_t *v, lisp_type_t type) {
-    /* only valid promotion right now */
-    assert(v->type == l_int && type == l_float);
-
-    return lisp_create_float((float)L_INT(v));
-}
-
-
-/**
  * given a file, return an ast
  */
 lv_t *lisp_parse_file(char *file) {
@@ -1374,6 +1440,8 @@ lexec_t *lisp_context_new(int scheme_revision) {
     ret->env = c_env_version(scheme_revision);
     ret->ehandler = default_ehandler;
 
+    maybe_initialize_gmp();
+
     return ret;
 }
 
@@ -1412,7 +1480,7 @@ void lisp_exec_push_env(lexec_t *exec, lv_t *env) {
     assert(exec);
     assert(env);
 
-    lisp_exec_push(exec, es_env, env);
+    lisp_exec_push(exec, es_env, exec->env);
     exec->env = env;
 }
 
@@ -1497,7 +1565,6 @@ lv_t *lisp_execute(lexec_t *exec, lv_t *v) {
     if(setjmp(jb) == 0) {
         result = c_sequential_eval(exec, v);
         assert(exec->eval_stack == NULL);
-        assert(exec->exc == NULL);
         return result;
     }
 

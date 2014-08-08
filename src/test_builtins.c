@@ -2,10 +2,19 @@
 #include <string.h>
 #include <stdlib.h>
 #include <setjmp.h>
+#include <gmp.h>
 
 #include "lisp-types.h"
 #include "primitives.h"
 #include "selfcheck.h"
+
+int int_value(lv_t *v) {
+    return mpz_get_ui(L_INT(v));
+}
+
+double float_value(lv_t *v) {
+    return mpf_get_d(L_FLOAT(v));
+}
 
 int test_special_forms_quote(void *scaffold) {
     lv_t *r, *er;
@@ -20,7 +29,7 @@ int test_special_forms_quote(void *scaffold) {
     er = c_sequential_eval(exec, r);
 
     assert(er->type == l_int);
-    assert(L_INT(er) == 1);
+    assert(int_value(er) == 1);
 
     r = lisp_parse_string("(quote (1 2 3))");
     er = c_sequential_eval(exec, r);
@@ -46,7 +55,7 @@ int test_plus(void *scaffold) {
     /* test base case */
     r = c_sequential_eval(exec, lisp_parse_string("(+)"));
     assert(r->type == l_int);
-    assert(L_INT(r) == 0);
+    assert(int_value(r) == 0);
 
     /* test numeric adds only */
     lisp_execute(exec, lisp_parse_string("(+ 1 (quote arf))"));
@@ -56,19 +65,19 @@ int test_plus(void *scaffold) {
     r = c_sequential_eval(exec, lisp_parse_string("(+ 1 2)"));
 
     assert(r->type == l_int);
-    assert(L_INT(r) == 3);
+    assert(int_value(r) == 3);
 
     /* test promotion */
     r = c_sequential_eval(exec, lisp_parse_string("(+ 1 0.2)"));
 
     assert(r->type == l_float);
-    assert(L_FLOAT(r) == 1.2);
+    assert(float_value(r) == 1.2);
 
     /* test listwise adds */
     r = c_sequential_eval(exec, lisp_parse_string("(+ 1 2 3)"));
 
     assert(r->type == l_int);
-    assert(L_INT(r) == 6);
+    assert(int_value(r) == 6);
 
     return 1;
 }

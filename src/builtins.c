@@ -96,10 +96,10 @@ int c_equalp(lv_t *a1, lv_t *a2) {
 
     switch(a1->type) {
     case l_int:
-        result = (L_INT(a1) == L_INT(a2));
+        result = (mpz_cmp(L_INT(a1), L_INT(a2)) == 0);
         break;
     case l_float:
-        result = (L_FLOAT(a1) == L_FLOAT(a2));
+        result = (mpf_cmp(L_FLOAT(a1), L_FLOAT(a2)) == 0);
         break;
     case l_bool:
         if((L_BOOL(a1) == 0 && L_BOOL(a2) == 0) ||
@@ -151,53 +151,6 @@ lv_t *p_equalp(lexec_t *exec, lv_t *v) {
     lv_t *a2 = L_CADR(v);
 
     return(lisp_create_bool(c_equalp(a1, a2)));
-}
-
-/**
- * add numeric types
- */
-lv_t *p_plus(lexec_t *exec, lv_t *v) {
-    int i_result = 0;
-    double f_result = 0.0;
-
-    lv_t *current = v;
-    lv_t *op;
-
-    lisp_type_t ret_type = l_int;
-
-    assert(v && (v->type == l_pair || v->type == l_null));
-
-    while(current && (current->type == l_pair)) {
-        op = L_CAR(current);
-
-        rt_assert((op->type == l_int || op->type == l_float),
-                  le_type, "non-numeric add");
-
-        /* promote result, if necessary */
-        if(ret_type != op->type) {
-            if(ret_type == l_int) {
-                ret_type = l_float;
-                f_result = (float)i_result;
-            }
-        }
-
-        if(ret_type == l_float) {
-            if(op->type == l_int) {
-                f_result += (float)L_INT(op);
-            } else {
-                f_result += L_FLOAT(op);
-            }
-        } else {
-            i_result += L_INT(op);
-        }
-
-        current = L_CDR(current);
-    }
-
-    if(ret_type == l_int)
-        return lisp_create_int(i_result);
-
-    return lisp_create_float(f_result);
 }
 
 lv_t *p_set_cdr(lexec_t *exec, lv_t *v) {

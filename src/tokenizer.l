@@ -45,7 +45,8 @@ extern char tok_char_special(char *str);
 %option noyywrap
 %option reentrant
 %option bison-locations
-
+float [\-\+]?([0-9]*)?\.([0-9]+)?([eE][\-\+]?[0-9]+)?
+integer [\-\+]?[0-9]+
 qstring \"[^\"\n]*[\"\n]
 symbol [^\t\r\n \)\(,`']*
 special_chars (nul|soh|stx|etx|eot|enq|ack|bel|bs|ht|lf|vt|ff|cr|so|si|dle|dc1|dc2|dc3|dc4|nak|syn|etb|can|em|sub|esc|fs|gs|rs|us|del|altmode|backnext|backspace|call|linefeed|page|return|rubout|space|tab)
@@ -70,10 +71,8 @@ special_chars (nul|soh|stx|etx|eot|enq|ack|bel|bs|ht|lf|vt|ff|cr|so|si|dle|dc1|d
 ,                              { return(UNQUOTE); }
 `                              { return(QUASIQUOTE); }
 
-\.[0-9]+                       { yylval->f_value = atof(yytext); return(FLOAT); }
-[0-9]+\.[0-9]*                 { yylval->f_value = atof(yytext); return(FLOAT); }
-
-[0-9]+                         { yylval->i_value = atoi(yytext); return(INTEGER); }
+{float}                        { yylval->s_value = (char*)strdup(yytext); return (FLOAT); }
+{integer}                      { yylval->s_value = (char*)strdup(yytext); return(INTEGER); }
 
 {qstring}                      { yylval->s_value = (char*)&(strdup(yytext)[1]);
                                  yylval->s_value[strlen(yylval->s_value) - 1] = '\0';

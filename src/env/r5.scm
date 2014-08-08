@@ -11,6 +11,7 @@
 (define #exec-system 6)
 (define #exec-raise 7)
 (define #exec-warn 8)
+(define #exec-div 9)
 
 (define + p-+)
 (define null? p-null?)
@@ -83,3 +84,18 @@
 (define char<=? p-char<=?)
 (define char>=? p-char>=?)
 (define char->integer p-char->integer)
+
+;; math
+(define integer? p-integer?)
+(define float? p-float?)
+(define exact? p-exact?)
+(define inexact? p-inexact?)
+(define > p->)
+(define < p-<)
+(define >= p->=)
+(define <= p-<=)
+(define = p-=)
+(define + p-+)
+(define - p--)
+(define * p-*)
+(define / p-/)
