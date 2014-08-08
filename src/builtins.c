@@ -99,7 +99,7 @@ int c_equalp(lv_t *a1, lv_t *a2) {
         result = (mpz_cmp(L_INT(a1), L_INT(a2)) == 0);
         break;
     case l_float:
-        result = (mpf_cmp(L_FLOAT(a1), L_FLOAT(a2)) == 0);
+        result = (mpfr_cmp(L_FLOAT(a1), L_FLOAT(a2)) == 0);
         break;
     case l_bool:
         if((L_BOOL(a1) == 0 && L_BOOL(a2) == 0) ||

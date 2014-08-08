@@ -42,7 +42,7 @@ static void math_promote(lv_t **a, lisp_type_t what) {
         switch(what) {
         case l_float:
             new_val = lisp_create_float(0);
-            mpf_set_z(L_FLOAT(new_val), L_INT(*a));
+            mpfr_set_z(L_FLOAT(new_val), L_INT(*a), MPFR_ROUND_TYPE);
             *a = new_val;
             break;
         default:
@@ -89,7 +89,7 @@ static lv_t *math_copy_value(lv_t *v) {
         break;
     case l_float:
         pnew = lisp_create_float(0);
-        mpf_set(L_FLOAT(pnew), L_FLOAT(pnew));
+        mpfr_set(L_FLOAT(pnew), L_FLOAT(pnew), MPFR_ROUND_TYPE);
         break;
     default:
         assert(0);
@@ -215,19 +215,19 @@ static lv_t *comp_op(lexec_t *exec, lv_t *v, math_comp_t op) {
     case l_float:
         switch(op) {
         case MC_EQ:
-            result = mpf_cmp(L_FLOAT(a0), L_FLOAT(a1)) == 0;
+            result = mpfr_cmp(L_FLOAT(a0), L_FLOAT(a1)) == 0;
             break;
         case MC_GT:
-            result = mpf_cmp(L_FLOAT(a0), L_FLOAT(a1)) > 0;
+            result = mpfr_cmp(L_FLOAT(a0), L_FLOAT(a1)) > 0;
             break;
         case MC_LT:
-            result = mpf_cmp(L_FLOAT(a0), L_FLOAT(a1)) < 0;
+            result = mpfr_cmp(L_FLOAT(a0), L_FLOAT(a1)) < 0;
             break;
         case MC_GTE:
-            result = mpf_cmp(L_FLOAT(a0), L_FLOAT(a1)) >= 0;
+            result = mpfr_cmp(L_FLOAT(a0), L_FLOAT(a1)) >= 0;
             break;
         case MC_LTE:
-            result = mpf_cmp(L_FLOAT(a0), L_FLOAT(a1)) <= 0;
+            result = mpfr_cmp(L_FLOAT(a0), L_FLOAT(a1)) <= 0;
             break;
         default:
             assert(0);
@@ -336,7 +336,8 @@ static lv_t *accum_op(lexec_t *exec, lv_t *v, math_op_t op) {
                     /* yes! we must promote! */
                     math_promote(&a, l_float);
                     math_promote(&arg, l_float);
-                    mpf_div(L_FLOAT(a), L_FLOAT(a), L_FLOAT(arg));
+                    mpfr_div(L_FLOAT(a), L_FLOAT(a), L_FLOAT(arg),
+                             MPFR_ROUND_TYPE);
                 } else {
                     mpz_tdiv_q(L_INT(a), L_INT(a), L_INT(arg));
                 }
@@ -348,16 +349,16 @@ static lv_t *accum_op(lexec_t *exec, lv_t *v, math_op_t op) {
         case l_float:
             switch(op) {
             case MO_ADD:
-                mpf_add(L_FLOAT(a), L_FLOAT(a), L_FLOAT(arg));
+                mpfr_add(L_FLOAT(a), L_FLOAT(a), L_FLOAT(arg), MPFR_ROUND_TYPE);
                 break;
             case MO_SUB:
-                mpf_sub(L_FLOAT(a), L_FLOAT(a), L_FLOAT(arg));
+                mpfr_sub(L_FLOAT(a), L_FLOAT(a), L_FLOAT(arg), MPFR_ROUND_TYPE);
                 break;
             case MO_MUL:
-                mpf_mul(L_FLOAT(a), L_FLOAT(a), L_FLOAT(arg));
+                mpfr_mul(L_FLOAT(a), L_FLOAT(a), L_FLOAT(arg), MPFR_ROUND_TYPE);
                 break;
             case MO_DIV:
-                mpf_div(L_FLOAT(a), L_FLOAT(a), L_FLOAT(arg));
+                mpfr_div(L_FLOAT(a), L_FLOAT(a), L_FLOAT(arg), MPFR_ROUND_TYPE);
                 break;
             default:
                 assert(0);

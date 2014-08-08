@@ -22,6 +22,7 @@
 #define __LISP_TYPES_H__
 
 #include <gmp.h>
+#include <mpfr.h>
 
 #define LISP_TYPES \
     C(l_int) \
@@ -41,6 +42,8 @@ typedef enum lisp_type_t { LISP_TYPES l_max } lisp_type_t;
 #undef C
 
 extern char *lisp_types_list[];
+
+#define MPFR_ROUND_TYPE MPFR_RNDN  /* roundTiesToEven (IEEE-754) */
 
 #define LISP_EXCEPTIONS \
     C(le_success) \
@@ -134,7 +137,7 @@ typedef struct lisp_int_t {
 } lisp_int_t;
 
 typedef struct lisp_float_t {
-    mpf_t value;
+    mpfr_t value;
 } lisp_float_t;
 
 typedef struct lisp_bool_t {

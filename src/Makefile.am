@@ -14,7 +14,7 @@ libminischeme_la_SOURCES = tokenizer.l primitives.h primitives.c \
 	lisp-types.h lisp-types.c redblack.h redblack.c ports.h ports.c \
 	char.h char.c math.c math.h
 
-libminischeme_la_LIBADD = -lgc -lgmp
+libminischeme_la_LIBADD = -lgc -lgmp -lmpfr
 
 minischeme_SOURCES = main.c
 minischeme_LDADD = -lreadline libminischeme.la

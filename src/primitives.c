@@ -403,8 +403,8 @@ lv_t *lisp_create_type(void *value, lisp_type_t type) {
         mpz_set_si(L_INT(result), *(int64_t *)value);
         break;
     case l_float:
-        mpf_init(L_FLOAT(result));
-        mpf_set_d(L_FLOAT(result), *(double*)value);
+        mpfr_init(L_FLOAT(result));
+        mpfr_set_d(L_FLOAT(result), *(double*)value, MPFR_ROUND_TYPE);
         break;
     case l_bool:
         L_BOOL(result) = *((int*)value);
@@ -493,7 +493,7 @@ lv_t *lisp_create_float_str(char *value) {
     lv_t *new_value = lisp_create_type((void*)&v, l_float);
 
     /* now parse the string */
-    flag = mpf_set_str(L_FLOAT(new_value), value, 10);
+    flag = mpfr_set_str(L_FLOAT(new_value), value, 10, MPFR_ROUND_TYPE);
     assert(!flag);
 
     return new_value;
@@ -620,7 +620,7 @@ int lisp_snprintf(char *buf, int len, lv_t *v) {
         return gmp_snprintf(buf, len, "%Zd", L_INT(v));
     case l_float:
         /* return snprintf(buf, len, "%0.16g", L_FLOAT(v)); */
-        return gmp_snprintf(buf, len, "%Fg", L_FLOAT(v));
+        return mpfr_snprintf(buf, len, "%Rg", L_FLOAT(v));
     case l_bool:
         return snprintf(buf, len, "%s", L_BOOL(v) ? "#t": "#f");
     case l_sym:

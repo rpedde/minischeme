@@ -13,7 +13,7 @@ int int_value(lv_t *v) {
 }
 
 double float_value(lv_t *v) {
-    return mpf_get_d(L_FLOAT(v));
+    return mpfr_get_d(L_FLOAT(v), MPFR_RNDN);
 }
 
 int test_special_forms_quote(void *scaffold) {
