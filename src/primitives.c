@@ -116,6 +116,7 @@ static environment_list_t s_env_prim[] = {
 
     // math functions
     { "p-integer?", p_integerp },
+    { "p-rational?", p_rationalp },
     { "p-float?" , p_floatp },
     { "p-exact?" , p_exactp },
     { "p-inexact?", p_inexactp },
@@ -402,6 +403,9 @@ lv_t *lisp_create_type(void *value, lisp_type_t type) {
         mpz_init(L_INT(result));
         mpz_set_si(L_INT(result), *(int64_t *)value);
         break;
+    case l_rational:
+        mpq_init(L_RAT(result));
+        break;
     case l_float:
         mpfr_init(L_FLOAT(result));
         mpfr_set_d(L_FLOAT(result), *(double*)value, MPFR_ROUND_TYPE);
@@ -472,6 +476,35 @@ lv_t *lisp_create_formatted_string(char *fmt, ...) {
  */
 lv_t *lisp_create_symbol(char *value) {
     return lisp_create_type((void*)value, l_sym);
+}
+
+/**
+ * typechecked wrapper around lisp_create_type for rationals
+ */
+lv_t *lisp_create_rational(int64_t n, int64_t d) {
+    lv_t *new_value = lisp_create_type(NULL, l_rational);
+    mpq_set_si(L_RAT(new_value), n, d);
+    mpq_canonicalize(L_RAT(new_value));
+    return new_value;
+}
+
+/**
+ * lisp_create_type for rational, using the string parser
+ * (to be able to represent arbitrary precision).  This
+ * is the preferred interface
+ */
+lv_t *lisp_create_rational_str(char *value) {
+    double v = 0;
+    int flag;
+
+    lv_t *new_value = lisp_create_type(NULL, l_rational);
+
+    /* now parse the string */
+    flag = mpq_set_str(L_RAT(new_value), value, 10);
+    assert(!flag);
+
+    mpq_canonicalize(L_RAT(new_value));
+    return new_value;
 }
 
 /**
@@ -618,6 +651,8 @@ int lisp_snprintf(char *buf, int len, lv_t *v) {
     case l_int:
         /* return snprintf(buf, len, "%" PRIu64, L_INT(v)); */
         return gmp_snprintf(buf, len, "%Zd", L_INT(v));
+    case l_rational:
+        return gmp_snprintf(buf, len, "%Qd", L_RAT(v));
     case l_float:
         /* return snprintf(buf, len, "%0.16g", L_FLOAT(v)); */
         return mpfr_snprintf(buf, len, "%Rg", L_FLOAT(v));

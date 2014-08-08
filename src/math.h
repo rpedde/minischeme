@@ -22,6 +22,7 @@
 #define _MATH_H_
 
 extern lv_t *p_integerp(lexec_t *exec, lv_t *v);
+extern lv_t *p_rationalp(lexec_t *exec, lv_t *v);
 extern lv_t *p_floatp(lexec_t *exec, lv_t *v);
 
 extern lv_t *p_exactp(lexec_t *exec, lv_t *v);

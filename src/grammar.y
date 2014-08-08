@@ -46,9 +46,10 @@ listitems(A) ::= sexpr(B) DOT sexpr(C).  { A.lisp_value = lisp_create_pair(
                                            B.lisp_value, C.lisp_value);
                                            STAMP(A); }
 
-atom(A) ::= INTEGER(B). { A.lisp_value = lisp_create_int_str(B.s_value); STAMP(A); }
-atom(A) ::= FLOAT(B).   { A.lisp_value = lisp_create_float_str(B.s_value); STAMP(A); }
-atom(A) ::= BOOL(B).    { A.lisp_value = lisp_create_bool(B.i_value); STAMP(A); }
-atom(A) ::= SYMBOL(B).  { A.lisp_value = lisp_create_symbol(B.s_value); STAMP(A); }
-atom(A) ::= STRING(B).  { A.lisp_value = lisp_create_string(B.s_value); STAMP(A); }
-atom(A) ::= CHAR(B).    { A.lisp_value = lisp_create_char(B.ch_value); STAMP(A); }
+atom(A) ::= INTEGER(B).  { A.lisp_value = lisp_create_int_str(B.s_value); STAMP(A); }
+atom(A) ::= RATIONAL(B). { A.lisp_value = lisp_create_rational_str(B.s_value); STAMP(A); }
+atom(A) ::= FLOAT(B).    { A.lisp_value = lisp_create_float_str(B.s_value); STAMP(A); }
+atom(A) ::= BOOL(B).     { A.lisp_value = lisp_create_bool(B.i_value); STAMP(A); }
+atom(A) ::= SYMBOL(B).   { A.lisp_value = lisp_create_symbol(B.s_value); STAMP(A); }
+atom(A) ::= STRING(B).   { A.lisp_value = lisp_create_string(B.s_value); STAMP(A); }
+atom(A) ::= CHAR(B).     { A.lisp_value = lisp_create_char(B.ch_value); STAMP(A); }

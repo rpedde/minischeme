@@ -26,6 +26,7 @@
 
 #define LISP_TYPES \
     C(l_int) \
+    C(l_rational) \
     C(l_float) \
     C(l_bool) \
     C(l_sym) \
@@ -102,6 +103,7 @@ typedef lv_t *(*lisp_method_t)(lexec_t *, lv_t*);
 
 #define L_CHAR(what)    (what)->value.ch.value
 #define L_INT(what)     (what)->value.i.value
+#define L_RAT(what)     (what)->value.r.value
 #define L_FLOAT(what)   (what)->value.f.value
 #define L_BOOL(what)    (what)->value.b.value
 #define L_SYM(what)     (what)->value.s.value
@@ -135,6 +137,10 @@ typedef struct lisp_char_t {
 typedef struct lisp_int_t {
     mpz_t value;
 } lisp_int_t;
+
+typedef struct lisp_rational_t {
+    mpq_t value;
+} lisp_rational_t;
 
 typedef struct lisp_float_t {
     mpfr_t value;
@@ -189,6 +195,7 @@ typedef struct lv_t {
     union {
         lisp_char_t ch;
         lisp_int_t i;
+        lisp_rational_t r;
         lisp_float_t f;
         lisp_bool_t b;
         lisp_symbol_t s;

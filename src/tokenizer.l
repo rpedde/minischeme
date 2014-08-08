@@ -45,6 +45,7 @@ extern char tok_char_special(char *str);
 %option noyywrap
 %option reentrant
 %option bison-locations
+rational [\-\+]?[0-9]+\/[0-9]+
 float [\-\+]?([0-9]*)?\.([0-9]+)?([eE][\-\+]?[0-9]+)?
 integer [\-\+]?[0-9]+
 qstring \"[^\"\n]*[\"\n]
@@ -71,8 +72,9 @@ special_chars (nul|soh|stx|etx|eot|enq|ack|bel|bs|ht|lf|vt|ff|cr|so|si|dle|dc1|d
 ,                              { return(UNQUOTE); }
 `                              { return(QUASIQUOTE); }
 
-{float}                        { yylval->s_value = (char*)strdup(yytext); return (FLOAT); }
-{integer}                      { yylval->s_value = (char*)strdup(yytext); return(INTEGER); }
+{rational}                     { yylval->s_value = strdup(yytext); return(RATIONAL); }
+{float}                        { yylval->s_value = strdup(yytext); return (FLOAT); }
+{integer}                      { yylval->s_value = strdup(yytext); return(INTEGER); }
 
 {qstring}                      { yylval->s_value = (char*)&(strdup(yytext)[1]);
                                  yylval->s_value[strlen(yylval->s_value) - 1] = '\0';

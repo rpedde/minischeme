@@ -87,6 +87,7 @@
 
 ;; math
 (define integer? p-integer?)
+(define rational? p-rational?)
 (define float? p-float?)
 (define exact? p-exact?)
 (define inexact? p-inexact?)

@@ -40,9 +40,25 @@ static void math_promote(lv_t **a, lisp_type_t what) {
     switch((*a)->type) {
     case l_int:
         switch(what) {
+        case l_rational:
+            new_val = lisp_create_rational(1, 1);
+            mpq_set_z(L_RAT(new_val), L_INT(*a));
+            *a = new_val;
+            break;
         case l_float:
             new_val = lisp_create_float(0);
             mpfr_set_z(L_FLOAT(new_val), L_INT(*a), MPFR_ROUND_TYPE);
+            *a = new_val;
+            break;
+        default:
+            assert(0);
+        }
+        break;
+    case l_rational:
+        switch(what) {
+        case l_float:
+            new_val = lisp_create_float(0);
+            mpfr_set_q(L_FLOAT(new_val), L_RAT(*a), MPFR_ROUND_TYPE);
             *a = new_val;
             break;
         default:
@@ -74,7 +90,9 @@ static void math_maybe_promote(lv_t **a0, lv_t **a1) {
 
 static int math_numeric(lv_t *v) {
     return (v->type == l_int ||
+            v->type == l_rational ||
             v->type == l_float);
+
 }
 
 static lv_t *math_copy_value(lv_t *v) {
@@ -86,6 +104,10 @@ static lv_t *math_copy_value(lv_t *v) {
     case l_int:
         pnew = lisp_create_int(0);
         mpz_set(L_INT(pnew), L_INT(v));
+        break;
+    case l_rational:
+        pnew = lisp_create_rational(0, 0);
+        mpq_set(L_RAT(pnew), L_RAT(v));
         break;
     case l_float:
         pnew = lisp_create_float(0);
@@ -108,6 +130,17 @@ lv_t *p_integerp(lexec_t *exec, lv_t *v) {
 
     lv_t *a0 = L_CAR(v);
     return lisp_create_bool(a0->type == l_int);
+}
+
+/**
+ * is the value in question a rational?
+ */
+lv_t *p_rationalp(lexec_t *exec, lv_t *v) {
+    assert(exec && v && v->type == l_pair);
+    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 argument");
+
+    lv_t *a0 = L_CAR(v);
+    return lisp_create_bool(a0->type == l_rational);
 }
 
 /**
@@ -134,6 +167,7 @@ lv_t *p_exactp(lexec_t *exec, lv_t *v) {
 
     switch(a0->type) {
     case l_int:
+    case l_rational:
         break;
     case l_float:
         res  = 0;
@@ -158,6 +192,7 @@ lv_t *p_inexactp(lexec_t *exec, lv_t *v) {
 
     switch(a0->type) {
     case l_int:
+    case l_rational:
         break;
     case l_float:
         res = 1;
@@ -207,6 +242,27 @@ static lv_t *comp_op(lexec_t *exec, lv_t *v, math_comp_t op) {
             break;
         case MC_LTE:
             result = (mpz_cmp(L_INT(a0), L_INT(a1)) <= 0);
+            break;
+        default:
+            assert(0);
+        }
+        break;
+    case l_rational:
+        switch(op) {
+        case MC_EQ:
+            result = mpq_cmp(L_RAT(a0), L_RAT(a1)) == 0;
+            break;
+        case MC_GT:
+            result = mpq_cmp(L_RAT(a0), L_RAT(a1)) > 0;
+            break;
+        case MC_LT:
+            result = mpq_cmp(L_RAT(a0), L_RAT(a1)) < 0;
+            break;
+        case MC_GTE:
+            result = mpq_cmp(L_RAT(a0), L_RAT(a1)) >= 0;
+            break;
+        case MC_LTE:
+            result = mpq_cmp(L_RAT(a0), L_RAT(a1)) <= 0;
             break;
         default:
             assert(0);
@@ -280,8 +336,7 @@ static lv_t *accum_op(lexec_t *exec, lv_t *v, math_op_t op) {
         a = lisp_create_int(1);
         break;
     case MO_DIV:
-        /* FIXME: should be rational */
-        a = lisp_create_int(1);
+        a = lisp_create_rational(1, 1);
         break;
     case MO_ADD:
     case MO_SUB:
@@ -334,13 +389,30 @@ static lv_t *accum_op(lexec_t *exec, lv_t *v, math_op_t op) {
                 /* should we promote? */
                 if(!mpz_divisible_p(L_INT(a), L_INT(arg))) {
                     /* yes! we must promote! */
-                    math_promote(&a, l_float);
-                    math_promote(&arg, l_float);
-                    mpfr_div(L_FLOAT(a), L_FLOAT(a), L_FLOAT(arg),
-                             MPFR_ROUND_TYPE);
+                    math_promote(&a, l_rational);
+                    math_promote(&arg, l_rational);
+                    mpq_div(L_RAT(a), L_RAT(a), L_RAT(arg));
                 } else {
                     mpz_tdiv_q(L_INT(a), L_INT(a), L_INT(arg));
                 }
+                break;
+            default:
+                assert(0);
+            }
+            break;
+        case l_rational:
+            switch(op) {
+            case MO_ADD:
+                mpq_add(L_RAT(a), L_RAT(a), L_RAT(arg));
+                break;
+            case MO_SUB:
+                mpq_sub(L_RAT(a), L_RAT(a), L_RAT(arg));
+                break;
+            case MO_MUL:
+                mpq_mul(L_RAT(a), L_RAT(a), L_RAT(arg));
+                break;
+            case MO_DIV:
+                mpq_div(L_RAT(a), L_RAT(a), L_RAT(arg));
                 break;
             default:
                 assert(0);
