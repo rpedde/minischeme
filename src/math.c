@@ -29,13 +29,13 @@
 
 typedef enum math_comp_t { MC_EQ, MC_GT, MC_LT, MC_GTE, MC_LTE } math_comp_t;
 typedef enum math_op_t { MO_ADD, MO_SUB, MO_MUL, MO_DIV } math_op_t;
-
+typedef enum math_round_t { MR_FLOOR, MR_CEIL, MR_TRUNC, MR_ROUND } math_round_t;
 
 static void math_promote(lv_t **a, lisp_type_t what) {
     lv_t *new_val;
 
     assert(a && *a);
-    assert((*a)->type != what);
+    assert((*a)->type <= what);
 
     switch((*a)->type) {
     case l_int:
@@ -546,17 +546,56 @@ lv_t *p_modulo(lexec_t *exec, lv_t *v) {
     return result;
 }
 
+static lv_t *round_op(lexec_t *exec, lv_t *v, math_round_t op) {
+    lv_t *new_value;
+
+    assert(exec && v && v->type == l_pair);
+    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 argument");
+
+    lv_t *a0 = L_CAR(v);
+
+    rt_assert(math_numeric(a0),
+              le_type, "expecting numeric arguments");
+
+    math_promote(&a0, l_float);
+
+    new_value = lisp_create_int(0);
+
+    switch(op) {
+    case MR_FLOOR:
+        mpfr_floor(L_FLOAT(a0), L_FLOAT(a0));
+        break;
+    case MR_CEIL:
+        mpfr_ceil(L_FLOAT(a0), L_FLOAT(a0));
+        break;
+    case MR_ROUND:
+        mpfr_round(L_FLOAT(a0), L_FLOAT(a0));
+        break;
+    case MR_TRUNC:
+        mpfr_trunc(L_FLOAT(a0), L_FLOAT(a0));
+        break;
+    default:
+        assert(0);
+    }
+
+    mpfr_get_z(L_INT(new_value), L_FLOAT(a0), MPFR_ROUND_TYPE);
+    return new_value;
+}
 
 lv_t *p_floor(lexec_t *exec, lv_t *v) {
+    return round_op(exec, v, MR_FLOOR);
 }
 
 lv_t *p_ceiling(lexec_t *exec, lv_t *v) {
+    return round_op(exec, v, MR_CEIL);
 }
 
 lv_t *p_truncate(lexec_t *exec, lv_t *v) {
+    return round_op(exec, v, MR_TRUNC);
 }
 
 lv_t *p_round(lexec_t *exec, lv_t *v) {
+    return round_op(exec, v, MR_ROUND);
 }
 
 

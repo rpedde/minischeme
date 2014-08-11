@@ -49,10 +49,10 @@ That said, this is general status toward a r[57]ish scheme:
 * [ ] gcd (library)
 * [ ] lcm (library)
 
-* [ ] floor
-* [ ] ceiling
-* [ ] truncate
-* [ ] round
+* [X] floor
+* [X] ceiling
+* [X] truncate
+* [X] round
 
 * [ ] exp
 * [ ] log

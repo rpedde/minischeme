@@ -104,3 +104,7 @@
 (define quotient p-quotient)
 (define remainder p-remainder)
 (define modulo p-modulo)
+(define floor p-floor)
+(define ceiling p-ceiling)
+(define truncate p-truncate)
+(define round p-round)
