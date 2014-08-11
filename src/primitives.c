@@ -129,6 +129,9 @@ static environment_list_t s_env_prim[] = {
     { "p--", p_minus },
     { "p-*", p_mul },
     { "p-/", p_div },
+    { "p-quotient", p_quotient },
+    { "p-remainder", p_remainder },
+    { "p-modulo", p_modulo },
     { NULL, NULL }
 };
 

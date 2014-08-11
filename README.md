@@ -42,9 +42,9 @@ That said, this is general status toward a r[57]ish scheme:
 * [X] /
 
 * [ ] abs (library)
-* [ ] quotient
-* [ ] remainder
-* [ ] modulo
+* [X] quotient
+* [X] remainder
+* [X] modulo
 
 * [ ] gcd (library)
 * [ ] lcm (library)
@@ -85,7 +85,7 @@ That said, this is general status toward a r[57]ish scheme:
 * [X] null?
 * [X] list? (library?)
 * [ ] list (library)
-* [ ] length (library?)
+* [X] length (library?)
 * [ ] append (library)
 * [ ] reverse (library)
 * [ ] tail-list (library)

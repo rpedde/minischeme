@@ -40,6 +40,8 @@ static void math_promote(lv_t **a, lisp_type_t what) {
     switch((*a)->type) {
     case l_int:
         switch(what) {
+        case l_int:
+            break;
         case l_rational:
             new_val = lisp_create_rational(1, 1);
             mpq_set_z(L_RAT(new_val), L_INT(*a));
@@ -56,6 +58,8 @@ static void math_promote(lv_t **a, lisp_type_t what) {
         break;
     case l_rational:
         switch(what) {
+        case l_rational:
+            break;
         case l_float:
             new_val = lisp_create_float(0);
             mpfr_set_q(L_FLOAT(new_val), L_RAT(*a), MPFR_ROUND_TYPE);
@@ -66,6 +70,8 @@ static void math_promote(lv_t **a, lisp_type_t what) {
         }
         break;
     case l_float:
+        if(what == l_float)
+            break;
         assert(0);
     default:
         assert(0);
@@ -466,13 +472,78 @@ lv_t *p_div(lexec_t *exec, lv_t *v) {
 }
 
 
+/**
+ * integer quotient of n/m
+ */
 lv_t *p_quotient(lexec_t *exec, lv_t *v) {
+    lv_t *result;
+    lv_t *ir;
+
+    assert(exec && v && v->type == l_pair);
+    rt_assert(c_list_length(v) == 2, le_arity, "expecting 2 arguments");
+
+    lv_t *a0 = L_CAR(v);
+    lv_t *a1 = L_CADR(v);
+
+    rt_assert(a0->type == l_int, le_type, "expecting integer arguments");
+    rt_assert(a1->type == l_int, le_type, "expecting integer arguments");
+
+    result = lisp_create_int(0);
+    mpz_tdiv_q(L_INT(result), L_INT(a0), L_INT(a1));
+    return result;
 }
 
+/**
+ * integer remainder of n/m
+ */
 lv_t *p_remainder(lexec_t *exec, lv_t *v) {
+    lv_t *result;
+    lv_t *ir;
+
+    assert(exec && v && v->type == l_pair);
+    rt_assert(c_list_length(v) == 2, le_arity, "expecting 2 arguments");
+
+    lv_t *a0 = L_CAR(v);
+    lv_t *a1 = L_CADR(v);
+
+    rt_assert(a0->type == l_int, le_type, "expecting integer arguments");
+    rt_assert(a1->type == l_int, le_type, "expecting integer arguments");
+
+    result = lisp_create_int(0);
+    mpz_tdiv_r(L_INT(result), L_INT(a0), L_INT(a1));
+    return result;
 }
+
+/**
+ * scheme does negative mods differently then mpc.  We'll
+ * adjust mpz_mod to behave in the scheme manner
+ */
+void mpz_scheme_mod(mpz_t r, const mpz_t n, const mpz_t d) {
+    mpz_mod(r, n, d);
+
+    if(mpz_cmp_si(d, 0) < 0) {
+        /* negative denominator */
+        mpz_add(r, d, r);
+    }
+}
+
 
 lv_t *p_modulo(lexec_t *exec, lv_t *v) {
+    lv_t *result;
+    lv_t *ir;
+
+    assert(exec && v && v->type == l_pair);
+    rt_assert(c_list_length(v) == 2, le_arity, "expecting 2 arguments");
+
+    lv_t *a0 = L_CAR(v);
+    lv_t *a1 = L_CADR(v);
+
+    rt_assert(a0->type == l_int, le_type, "expecting integer arguments");
+    rt_assert(a1->type == l_int, le_type, "expecting integer arguments");
+
+    result = lisp_create_int(0);
+    mpz_scheme_mod(L_INT(result), L_INT(a0), L_INT(a1));
+    return result;
 }
 
 
