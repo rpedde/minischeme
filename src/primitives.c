@@ -136,6 +136,12 @@ static environment_list_t s_env_prim[] = {
     { "p-ceiling", p_ceiling },
     { "p-truncate", p_truncate },
     { "p-round", p_round },
+    { "p-sin", p_sin },
+    { "p-cos", p_cos },
+    { "p-tan", p_tan },
+    { "p-asin", p_asin },
+    { "p-acos", p_acos },
+    { "p-atan", p_atan },
     { NULL, NULL }
 };
 
@@ -1243,6 +1249,7 @@ lv_t *c_env_version(int version) {
     lv_t *newenv;
     char filename[40];
     lexec_t *exec;
+    jmp_buf jb;
 
     newenv = lisp_create_pair(lisp_create_hash(),
                               lisp_create_pair(p_layer, NULL));
@@ -1261,8 +1268,14 @@ lv_t *c_env_version(int version) {
         current++;
     }
 
-    /* now, run the setup environment */
-    p_load(exec, lisp_create_pair(lisp_create_string(filename), NULL));
+    lisp_exec_push_ex(exec, &jb);
+
+    if(setjmp(jb) == 0) {
+        p_load(exec, lisp_create_pair(lisp_create_string(filename), NULL));
+        lisp_exec_pop_ex(exec);
+    } else {
+        default_ehandler(exec);
+    }
 
     /* and return just the generated environment */
     return lisp_create_pair(L_CAR(exec->env), NULL);
@@ -1289,6 +1302,8 @@ lv_t *lisp_parse_file(char *file) {
     yy_switch_to_buffer(buffer, scanner);
 
     while((yv = yylex(&yys, &yyl, scanner)) != 0) {
+        printf("%d:%d Got token: %d\n", yyl.first_line,
+               yyl.first_column, yv);
         Parse(parser, yv, yys, &lst);
     }
 
@@ -1479,6 +1494,7 @@ lexec_t *lisp_context_new(int scheme_revision) {
     lexec_t *ret = safe_malloc(sizeof(lexec_t));
 
     memset(ret, 0, sizeof(lexec_t));
+
     ret->env = c_env_version(scheme_revision);
     ret->ehandler = default_ehandler;
 

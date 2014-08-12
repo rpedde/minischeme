@@ -19,9 +19,9 @@
 %extra_argument { lexer_shared_t *ls }
 %syntax_error {
     ls->error = 1;
+    printf("syntax error: %d:%d\n", ls->pos->first_line, ls->pos->first_column);
     memcpy(ls->error_pos, ls->pos, sizeof(yyltype_t));
 }
-
 
 program ::= listitems(A).              { ls->result = A.lisp_value; }
 

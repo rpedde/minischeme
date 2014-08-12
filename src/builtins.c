@@ -213,11 +213,16 @@ lv_t *p_inspect(lexec_t *exec, lv_t *v) {
 }
 
 lv_t *p_load(lexec_t *exec, lv_t *v) {
+    lv_t *parsed;
+
     assert(v && (v->type == l_pair));
     rt_assert(c_list_length(v) == 1, le_arity, "load arity");
     rt_assert(L_CAR(v)->type == l_str, le_type, "filename must be string");
 
-    return c_sequential_eval(exec, lisp_parse_file(L_STR(L_CAR(v))));
+    parsed = lisp_parse_file(L_STR(L_CAR(v)));
+    rt_assert(parsed, le_syntax, "Syntax error loading file");
+
+    return c_sequential_eval(exec, parsed);
 }
 
 lv_t *p_length(lexec_t *exec, lv_t *v) {
