@@ -99,11 +99,12 @@ static environment_list_t s_env_prim[] = {
     { "p-format", p_format },
 
     // port functions
-    { "p-open-file", p_open_file },
-    { "p-port-filename", p_port_filename },
-    { "p-set-port-filename!", p_set_port_filename },
-    { "p-port-mode", p_port_mode },
-    { "p-file-port?", p_file_port_p },
+    { "p-input-port?", p_input_portp },
+    { "p-output-port?", p_output_portp },
+    { "p-open-input-file", p_open_input_file },
+    { "p-open-output-file", p_open_output_file },
+    { "p-close-input-port", p_close_input_port },
+    { "p-close-output-port", p_close_output_port },
 
     // char functions
     { "p-char?", p_charp },
@@ -430,7 +431,7 @@ lv_t *lisp_create_type(void *value, lisp_type_t type) {
         L_FN(result) = (lisp_method_t)value;
         break;
     case l_port:
-        L_P_FP(result) = (FILE*)value;
+        L_PORT(result) = (FILE*)value;
         break;
     default:
         assert(0);
@@ -589,12 +590,8 @@ lv_t *lisp_create_native_fn(lisp_method_t value) {
  *
  * FIXME: needs fclose finalizer
  */
-lv_t *lisp_create_port(FILE *fp, lv_t *filename, lv_t *mode) {
-    lv_t *p = lisp_create_type((void*)fp, l_port);
-
-    L_P_MODE(p) = mode;
-    L_P_FN(p) = filename;
-
+lv_t *lisp_create_port(port_info_t *pi) {
+    lv_t *p = lisp_create_type((void*)pi, l_port);
 
     return p;
 }

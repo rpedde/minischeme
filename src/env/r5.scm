@@ -70,11 +70,12 @@
 
 
 ;; ports
-(define open-file p-open-file)
-(define port-filename p-port-filename)
-(define port-set-filename! p-port-set-filename!)
-(define port-mode p-port-mode)
-(define file-port? p-file-port?)
+(define input-port? p-input-port?)
+(define output-port? p-output-port?)
+(define open-input-file p-open-input-file)
+(define open-output-file p-open-output-file)
+(define close-input-port p-close-input-port)
+(define close-output-port p-close-output-port)
 
 ;; char
 (define char? p-char?)

@@ -65,7 +65,7 @@ extern lv_t *lisp_create_bool(int value);
 extern lv_t *lisp_create_hash(void);
 extern lv_t *lisp_create_null(void);
 extern lv_t *lisp_create_native_fn(lisp_method_t value);
-extern lv_t *lisp_create_port(FILE *fp, lv_t *filename, lv_t *mode);
+extern lv_t *lisp_create_port(port_info_t *pi);
 extern lv_t *lisp_create_lambda(lexec_t *exec, lv_t *formals, lv_t *body);
 extern lv_t *lisp_create_macro(lexec_t *exec, lv_t *formals, lv_t *form);
 extern lv_t *lisp_create_formatted_string(char *fmt, ...)

@@ -23,84 +23,198 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "lisp-types.h"
 #include "primitives.h"
 #include "ports.h"
 
-lv_t *p_open_file(lexec_t *exec, lv_t *v) {
+typedef enum port_type_t { PT_FILE, PT_STRING } port_type_t;
+typedef enum port_dir_t { PD_INPUT, PD_OUTPUT, PD_BOTH } port_dir_t;
+
+typedef struct port_file_info_t {
+    int fd;
+    lv_t *filename;
+} port_file_info_t;
+
+typedef struct port_string_info_t {
+    char *buffer;
+    size_t pos;
+} port_string_info_t;
+
+typedef struct port_info_t {
+    port_type_t type;
+    port_dir_t dir;
+    union {
+        port_file_info_t fi;
+        port_string_info_t si;
+    } info;
+} port_info_t;
+
+/**
+ * open a file system file for either read or write (or both).
+ *
+ * there are unspecified cases around here regarding
+ * O_CREAT, O_APPEND, and O_TRUNC.  Not sure how this
+ * should be handled.
+ */
+lv_t *c_open_file(lexec_t *exec, lv_t *v, port_dir_t dir) {
     assert(exec);
     assert(v && v->type == l_pair);
-    rt_assert(c_list_length(v) == 2, le_arity, "expecting 2 arguments");
+    rt_assert(c_list_length(v) == 2, le_arity, "expecting 1 argument");
 
     lv_t *filename = L_CAR(v);
-    lv_t *mode = L_CADR(v);
-
     rt_assert(filename->type == l_str, le_type, "filename requires string");
-    rt_assert(mode->type == l_str, le_type, "mode requirest string");
 
-    rt_assert(strlen(L_STR(mode)), le_syntax, "mode must be r, w, or a");
-    rt_assert(*L_STR(mode) == 'r' ||
-              *L_STR(mode) == 'w' ||
-              *L_STR(mode) == 'a', le_syntax, "mode must be r, w, or a");
+    port_info_t *pi = (port_info_t *)safe_malloc(sizeof(port_info_t));
+    memset(pi, 0, sizeof(port_info_t));
 
-    /* meh.  rather than parsing out the 0 and l, we'll just
-       pass it straight through to fopen */
+    pi->type = PT_FILE;
+    pi->dir = dir;
 
-    FILE *fp;
-    fp = fopen(L_STR(filename), L_STR(mode));
-    rt_assert(fp, le_system, strerror(errno));
+    pi->info.fi.filename = filename;
 
-    return lisp_create_port(fp, filename, mode);
+    int f_mode = O_RDONLY;
+
+    switch(dir) {
+    case PD_INPUT:
+        f_mode = O_RDONLY;
+        break;
+    case PD_OUTPUT:
+        f_mode = O_WRONLY;
+        break;
+    case PD_BOTH:
+        f_mode = O_RDWR;
+        break;
+    default:
+        assert(0); /* can't happen */
+    }
+
+    pi->info.fi.fd = open(L_STR(filename), f_mode);
+    rt_assert(pi->info.fi.fd != -1, le_system, strerror(errno));
+
+    return lisp_create_port(pi);
 }
 
-lv_t *p_port_filename(lexec_t *exec, lv_t *v) {
+/**
+ * c helper for p_close_input_port and p_close_output_port
+ */
+lv_t *c_close_file(lexec_t *exec, lv_t *port) {
     assert(exec);
-    assert(v && v->type == l_pair);
-    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 argument");
+    assert(port && port->type == l_port);
+    assert(L_PORT(port)->type == PT_FILE);
 
-    lv_t *port = L_CAR(v);
-
-    rt_assert(port->type == l_port, le_type, "expecting port type");
-
-    return L_P_FN(port);
-}
-
-lv_t *p_set_port_filename(lexec_t *exec, lv_t *v) {
-    assert(exec);
-    assert(v && v->type == l_pair);
-    rt_assert(c_list_length(v) == 2, le_arity, "expecting 2 arguments");
-
-    lv_t *port = L_CAR(v);
-    lv_t *filename = L_CADR(v);
-
-    rt_assert(port->type == l_port, le_type, "expecting port type");
-    rt_assert(filename->type == l_str, le_type, "expecting string filename");
-
-    L_P_FN(port) = filename;
+    close(L_PORT(port)->info.fi.fd);
     return lisp_create_null();
 }
 
-lv_t *p_port_mode(lexec_t *exec, lv_t *v) {
-    assert(exec);
-    assert(v && v->type == l_pair);
-    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 argument");
-
-    lv_t *port = L_CAR(v);
-
-    rt_assert(port->type == l_port, le_type, "expecting port type");
-
-    return L_P_MODE(port);
+lv_t *p_open_input_file(lexec_t *exec, lv_t *v) {
+    return c_open_file(exec, v, PD_INPUT);
 }
 
-lv_t *p_file_port_p(lexec_t *exec, lv_t *v) {
+lv_t *p_open_output_file(lexec_t *exec, lv_t *v) {
+    return c_open_file(exec, v, PD_OUTPUT);
+}
+
+lv_t *p_close_input_port(lexec_t *exec, lv_t *v) {
     assert(exec);
     assert(v && v->type == l_pair);
+
+    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 argument");
+    lv_t *port = L_CAR(v);
+    rt_assert(L_PORT(port)->dir == PD_INPUT,
+              le_type, "not an input port");
+
+    switch(L_PORT(port)->type) {
+    case PT_FILE:
+        return c_close_file(exec, port);
+        break;
+    default:
+        break;
+    }
+
+    /* an unhandled type */
+    assert(0);
+}
+
+lv_t *p_close_output_port(lexec_t *exec, lv_t *v) {
+    assert(exec);
+    assert(v && v->type == l_pair);
+
+    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 argument");
+    lv_t *port = L_CAR(v);
+    rt_assert(L_PORT(port)->dir == PD_OUTPUT,
+              le_type, "not an output port");
+
+    switch(L_PORT(port)->type) {
+    case PT_FILE:
+        return c_close_file(exec, port);
+        break;
+    default:
+        break;
+    }
+
+    /* an unhandled type */
+    assert(0);
+}
+
+/**
+ * (input-port? obj)
+ *
+ * returns #t if obj is an input port
+ */
+extern lv_t *p_input_portp(lexec_t *exec, lv_t *v) {
+    assert(exec);
+    assert(v && v->type == l_pair);
+
     rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 argument");
 
     lv_t *port = L_CAR(v);
-
-    if (port->type == l_port)
+    if((port->type == l_port) && (L_PORT(port)->dir == PD_INPUT)) {
         return lisp_create_bool(1);
+    }
     return lisp_create_bool(0);
+}
+
+
+/**
+ * (output-port? obj)
+ *
+ * returns #t if obj is an output port
+ */
+extern lv_t *p_output_portp(lexec_t *exec, lv_t *v) {
+    assert(exec);
+    assert(v && v->type == l_pair);
+
+    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 argument");
+
+    lv_t *port = L_CAR(v);
+    if((port->type == l_port) && (L_PORT(port)->dir == PD_OUTPUT)) {
+        return lisp_create_bool(1);
+    }
+    return lisp_create_bool(0);
+}
+
+/*
+ * These functions require a concept of current input port
+ * and current output port.  These probably need to be
+ * exec stack items, or perhaps private environment values.
+ *
+ * regardless, they are not yet implemented
+ */
+extern lv_t *p_current_input_port(lexec_t *exec, lv_t *v) {
+    return lisp_create_null();
+}
+
+extern lv_t *p_current_output_port(lexec_t *exec, lv_t *v) {
+    return lisp_create_null();
+}
+
+extern lv_t *p_with_input_from_file(lexec_t *exec, lv_t *v) {
+    return lisp_create_null();
+}
+
+extern lv_t *p_with_output_to_file(lexec_t *exec, lv_t *v) {
+    return lisp_create_null();
 }

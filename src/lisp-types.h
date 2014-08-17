@@ -101,6 +101,8 @@ typedef struct lexec_t {
 
 typedef lv_t *(*lisp_method_t)(lexec_t *, lv_t*);
 
+typedef struct port_info_t port_info_t;  /* ports.c */
+
 #define L_CHAR(what)    (what)->value.ch.value
 #define L_INT(what)     (what)->value.i.value
 #define L_RAT(what)     (what)->value.r.value
@@ -118,9 +120,7 @@ typedef lv_t *(*lisp_method_t)(lexec_t *, lv_t*);
 #define L_FN_BODY(what) (what)->value.l.body
 #define L_FN_ENV(what)  (what)->value.l.env
 
-#define L_P_FP(what)    (what)->value.port.fp
-#define L_P_MODE(what)  (what)->value.port.mode
-#define L_P_FN(what)    (what)->value.port.filename
+#define L_PORT(what)    (what)->value.port.pi
 
 #define L_CADR(what)    L_CAR(L_CDR(what))
 #define L_CAAR(what)    L_CAR(L_CAR(what))
@@ -180,10 +180,7 @@ typedef struct lisp_fn_t {
 } lisp_fn_t;
 
 typedef struct lisp_port_t {
-    FILE *fp;
-    lv_t *mode;
-    lv_t *filename;
-    int buffered;
+    port_info_t *pi;
 } lisp_port_t;
 
 typedef struct lv_t {
