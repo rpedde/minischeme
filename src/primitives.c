@@ -105,6 +105,9 @@ static environment_list_t s_env_prim[] = {
     { "p-open-output-file", p_open_output_file },
     { "p-close-input-port", p_close_input_port },
     { "p-close-output-port", p_close_output_port },
+    { "p-read-char", p_read_char },
+    { "p-peek-char", p_peek_char },
+    { "p-toktest", p_toktest },
 
     // char functions
     { "p-char?", p_charp },
@@ -431,7 +434,7 @@ lv_t *lisp_create_type(void *value, lisp_type_t type) {
         L_FN(result) = (lisp_method_t)value;
         break;
     case l_port:
-        L_PORT(result) = (FILE*)value;
+        L_PORT(result) = (port_info_t *)value;
         break;
     default:
         assert(0);
@@ -714,9 +717,11 @@ int lisp_snprintf(char *buf, int len, lv_t *v) {
     case l_char:
         return snprintf(buf, len, "%c", L_CHAR(v));
         break;
+    case l_port:
+        return snprintf(buf, len, "<port@%p>", v);
+        break;
     default:
         // missing a type check.
-        fprintf(stderr, "Crazy type: %d\n", v->type);
         assert(0);
     }
 

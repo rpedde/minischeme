@@ -21,6 +21,7 @@
 #ifndef _PORTS_H_
 #define _PORTS_H_
 
+/* ports */
 extern lv_t *p_input_portp(lexec_t *exec, lv_t *v);
 extern lv_t *p_output_portp(lexec_t *exec, lv_t *v);
 extern lv_t *p_current_input_port(lexec_t *exec, lv_t *v);
@@ -31,5 +32,16 @@ extern lv_t *p_open_input_file(lexec_t *exec, lv_t *v);
 extern lv_t *p_open_output_file(lexec_t *exec, lv_t *v);
 extern lv_t *p_close_input_port(lexec_t *exec, lv_t *v);
 extern lv_t *p_close_output_port(lexec_t *exec, lv_t *v);
+
+extern ssize_t c_read(lexec_t *exec, lv_t *port, char *buffer, size_t len);
+extern ssize_t c_write(lexec_t *exec, lv_t *port, char *buffer, size_t len);
+
+
+/* input */
+extern lv_t *p_read_char(lexec_t *exec, lv_t *v);
+extern lv_t *p_peek_char(lexec_t *exec, lv_t *v);
+
+/* testing */
+extern lv_t *p_toktest(lexec_t *exec, lv_t *v);
 
 #endif /* _PORTS_H_ */
