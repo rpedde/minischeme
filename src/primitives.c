@@ -107,7 +107,10 @@ static environment_list_t s_env_prim[] = {
     { "p-close-output-port", p_close_output_port },
     { "p-read-char", p_read_char },
     { "p-peek-char", p_peek_char },
+
     { "p-toktest", p_toktest },
+    { "p-parsetest", p_parsetest },
+    { "p-read", p_read },
 
     // char functions
     { "p-char?", p_charp },
@@ -140,6 +143,10 @@ static environment_list_t s_env_prim[] = {
     { "p-ceiling", p_ceiling },
     { "p-truncate", p_truncate },
     { "p-round", p_round },
+
+    // SRFI-6
+    { "p-open-input-string", p_open_input_string },
+
     { NULL, NULL }
 };
 

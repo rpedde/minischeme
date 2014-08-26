@@ -198,9 +198,9 @@ That said, this is general status toward a r[57]ish scheme:
 
 ## input ##
 
-* [ ] read
-* [ ] read-char
-* [ ] peek-char
+* [X] read
+* [X] read-char
+* [X] peek-char
 * [ ] eof-object?
 * [ ] char-ready?
 
@@ -222,6 +222,11 @@ That said, this is general status toward a r[57]ish scheme:
 * [X] load
 * [ ] transcript-on
 * [ ] transcript-off
+
+## SRFI-6 ##
+* [X] open-input-string
+* [ ] open-output-string
+* [ ] get-output-string
 
 ## SRFI-69 ##
 

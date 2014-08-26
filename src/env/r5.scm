@@ -78,7 +78,10 @@
 (define close-output-port p-close-output-port)
 (define read-char p-read-char)
 (define peek-char p-peek-char)
+
 (define toktest p-toktest)
+(define parsetest p-parsetest)
+(define read p-read)
 
 ;; char
 (define char? p-char?)
@@ -112,3 +115,6 @@
 (define ceiling p-ceiling)
 (define truncate p-truncate)
 (define round p-round)
+
+;; srfi-6
+(define open-input-string p-open-input-string)

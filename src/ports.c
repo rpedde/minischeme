@@ -61,6 +61,9 @@ typedef struct port_info_t {
 #define R_FLOAT    "^[-+]?([0-9]*)?\\.([0-9]+)?([eE][-+]?[0-9]+)?$"
 #define R_INTEGER  "^[-+]?[0-9]+$"
 
+#define MAX(a, b) ((a) > (b)) ? (a) : (b)
+#define MIN(a, b) ((a) > (b)) ? (b) : (a)
+
 /* Forwards */
 ssize_t c_read_fd(lexec_t *exec, int fd, char *buffer, size_t len);
 ssize_t c_write_fd(lexec_t *exec, int fd, char *buffer, size_t len);
@@ -68,6 +71,26 @@ ssize_t c_read(lexec_t *exec, lv_t *port, char *buffer, size_t len);
 ssize_t c_write(lexec_t *exec, lv_t *port, char *buffer, size_t len);
 int c_read_char(lexec_t *exec, lv_t *port);
 int c_peek_char(lexec_t *exec, lv_t *port);
+
+
+/* tokenization */
+typedef enum token_type_t { T_QUOTE, T_QUASIQUOTE, T_UNQUOTESPLICING,
+                            T_UNQUOTE, T_OPENPAREN, T_CLOSEPAREN,
+                            T_DOT, T_INTEGER, T_RATIONAL, T_FLOAT,
+                            T_BOOL, T_SYMBOL, T_STRING, T_CHAR, T_EOF
+} token_type_t;
+
+typedef struct token_t {
+    token_type_t tok;
+    char *s_value;
+} token_t;
+
+#define TOKENIZER_MAX_TOKEN 256
+
+static lv_t *c_parse(lexec_t *exec, lv_t *port);
+static lv_t *c_parse_sexpr(lexec_t *exec, lv_t *port, token_t *tok);
+static lv_t *c_parse_list(lexec_t *exec, lv_t *port, token_t *tok);
+static lv_t *c_parse_atom(lexec_t *exec, lv_t *port, token_t *tok);
 
 /**
  * open a file system file for either read or write (or both).
@@ -112,6 +135,33 @@ static lv_t *c_open_file(lexec_t *exec, lv_t *v, port_dir_t dir) {
     rt_assert(pi->info.fi.fd != -1, le_system, strerror(errno));
 
     return lisp_create_port(pi);
+}
+
+/**
+ * open a string for either read or write (or both).
+ */
+static lv_t *c_open_string(lexec_t *exec, lv_t *v, port_dir_t dir) {
+    assert(exec);
+    assert(v && v->type == l_pair);
+    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 argument");
+
+    lv_t *str = L_CAR(v);
+    rt_assert(str->type == l_str, le_type, "expecting string");
+
+    port_info_t *pi = (port_info_t *)safe_malloc(sizeof(port_info_t));
+    memset(pi, 0, sizeof(port_info_t));
+
+    pi->type = PT_STRING;
+    pi->dir = dir;
+
+    pi->info.si.buffer = L_STR(str);
+    pi->info.si.pos = 0;
+
+    return lisp_create_port(pi);
+}
+
+lv_t *p_open_input_string(lexec_t *exec, lv_t *v) {
+    return c_open_string(exec, v, PD_INPUT);
 }
 
 /**
@@ -185,8 +235,11 @@ ssize_t c_write_fd(lexec_t *exec, int fd, char *buffer, size_t len) {
 /**
  * c dispatch function for reading an arbitrary port type
  */
-ssize_t c_read(lexec_t *exec, lv_t *port, char *buffer, size_t len) {
+ssize_t c_port_read(lexec_t *exec, lv_t *port, char *buffer, size_t len) {
     ssize_t res;
+    size_t pos;
+    char *sbuff;
+    size_t actual_len;
 
     assert(exec && port);
     assert(port->type == l_port);
@@ -197,6 +250,16 @@ ssize_t c_read(lexec_t *exec, lv_t *port, char *buffer, size_t len) {
         res = c_read_fd(exec, L_PORT(port)->info.fi.fd, buffer, len);
         if(!res)
             L_PORT(port)->eof = 1;
+        break;
+    case PT_STRING:
+        pos = L_PORT(port)->info.si.pos;
+        sbuff = L_PORT(port)->info.si.buffer;
+        actual_len = MIN(strlen(&sbuff[pos]), len);
+
+        memcpy(buffer, &sbuff[pos], actual_len);
+        L_PORT(port)->info.si.pos += actual_len;
+        L_PORT(port)->eof = !strlen(&sbuff[L_PORT(port)->info.si.pos]);
+        res = actual_len;
         break;
     default:
         /* unhandled port type */
@@ -238,7 +301,7 @@ int c_read_char(lexec_t *exec, lv_t *port) {
         return L_PORT(port)->peeked_char;
     }
 
-    result = c_read(exec, port, &data, 1);
+    result = c_port_read(exec, port, &data, 1);
     if(result == 1)
         return data;
 
@@ -370,7 +433,6 @@ lv_t *p_output_portp(lexec_t *exec, lv_t *v) {
 }
 
 
-
 /*
  * These functions require a concept of current input port
  * and current output port.  These probably need to be
@@ -394,75 +456,22 @@ lv_t *p_with_output_to_file(lexec_t *exec, lv_t *v) {
     return lisp_create_null();
 }
 
-typedef enum token_type_t { T_QUOTE, T_QUASIQUOTE, T_UNQUOTESPLICING,
-                            T_UNQUOTE, T_OPENPAREN, T_CLOSEPAREN,
-                            T_DOT, T_INTEGER, T_RATIONAL, T_FLOAT,
-                            T_BOOL, T_SYMBOL, T_STRING, T_CHAR, T_EOF
-} token_type_t;
 
-typedef struct token_t {
-    char *s_value;
-} token_t;
+token_t *c_new_token(token_type_t tok, char *s_value) {
+    token_t *pnew;
+    pnew = safe_malloc(sizeof(token_t));
+    pnew->tok = tok;
+    pnew->s_value = NULL;
 
-#define TOKENIZER_MAX_TOKEN 256
+    if(s_value)
+        pnew->s_value = safe_strdup(s_value);
 
-token_t *c_new_token(token_type_t tok, char *val) {
-    switch(tok) {
-    case T_QUOTE:
-        fprintf(stderr, "Token: QUOTE\n");
-        break;
-    case T_QUASIQUOTE:
-        fprintf(stderr, "Token: QUASIQUOTE\n");
-        break;
-    case T_UNQUOTESPLICING:
-        fprintf(stderr, "Token: UNQUOTESPLICING\n");
-        break;
-    case T_UNQUOTE:
-        fprintf(stderr, "Token: UNQUOTE\n");
-        break;
-    case T_OPENPAREN:
-        fprintf(stderr, "Token: OPENPARN\n");
-        break;
-    case T_CLOSEPAREN:
-        fprintf(stderr, "Token: CLOSEPAREN\n");
-        break;
-    case T_DOT:
-        fprintf(stderr, "Token: DOT\n");
-        break;
-    case T_INTEGER:
-        fprintf(stderr, "Token: INTEGER (%s)\n", val);
-        break;
-    case T_RATIONAL:
-        fprintf(stderr, "Token: RATIONAL (%s)\n", val);
-        break;
-    case T_FLOAT:
-        fprintf(stderr, "Token: FLOAT (%s)\n", val);
-        break;
-    case T_BOOL:
-        fprintf(stderr, "Token: BOOL (%s)\n", val);
-        break;
-    case T_SYMBOL:
-        fprintf(stderr, "Token: SYMBOL (%s)\n", val);
-        break;
-    case T_STRING:
-        fprintf(stderr, "Token: STRING (%s)\n", val);
-        break;
-    case T_CHAR:
-        fprintf(stderr, "Token: CHAR (%s)\n", val);
-        break;
-    case T_EOF:
-        fprintf(stderr, "Token: EOF\n");
-        break;
-    }
-
-    return NULL;
+    return pnew;
 }
 
 regex_t *c_compile_regex(char *expr) {
     int ret;
     regex_t *result;
-
-    fprintf(stderr, "compiling %s\n", expr);
 
     result = safe_malloc(sizeof(regex_t));
     ret = regcomp(result, expr, REG_EXTENDED);
@@ -481,8 +490,6 @@ token_t *c_determine_token(char *val) {
     if(!r_float) r_float = c_compile_regex(R_FLOAT);
     if(!r_int) r_int = c_compile_regex(R_INTEGER);
 
-    fprintf(stderr, "Determine: %s\n", val);
-
     if(!strcmp(val, ".")) {
         return c_new_token(T_DOT, NULL);
     } else if(!strncmp(val, "#\\", 2)) {
@@ -494,9 +501,10 @@ token_t *c_determine_token(char *val) {
         return c_new_token(T_UNQUOTE, NULL);
     } else if(!strcmp(val, "`")) {
         return c_new_token(T_QUASIQUOTE, NULL);
+    } else if(!strcmp(val, "#t") || !strcmp(val, "#f")) {
+        return c_new_token(T_BOOL, val);
     } else if(*val == '#') {
-        /* FIXME */
-        fprintf(stderr, "special value");
+        return c_new_token(T_CHAR, val);
     }
 
     /* now, check regex terms:
@@ -631,7 +639,6 @@ token_t *c_get_token(lexec_t *exec, lv_t *port) {
 
                 }
                 break;
-
             case ' ':
             case '\n':
             case '\r':
@@ -645,6 +652,147 @@ token_t *c_get_token(lexec_t *exec, lv_t *port) {
             }
         }
     }
+}
+
+lv_t *p_read(lexec_t *exec, lv_t *v) {
+    assert(exec);
+    assert(v && v->type == l_pair);
+
+    rt_assert(c_list_length(v) == 1, le_arity, "expecting port");
+
+    lv_t *port = L_CAR(v);
+    rt_assert(port->type == l_port, le_type, "expecting port");
+
+    return c_parse(exec, port);
+}
+
+static lv_t *c_parse(lexec_t *exec, lv_t *port) {
+    lv_t *res;
+    token_t *tok;
+
+    assert(exec);
+    assert(port && port->type == l_port && L_PORT(port)->dir != PD_OUTPUT);
+
+    tok = c_get_token(exec, port);
+    res = c_parse_sexpr(exec, port, tok);
+}
+
+static lv_t *c_parse_sexpr(lexec_t *exec, lv_t *port, token_t *tok) {
+    /* QUOTE sexpr
+     * QUASIQUOTE sexpr
+     * UNQUOTESPLICING sexpr
+     * UNQUOTE sexpr
+     * atom
+     * list
+     */
+    lv_t *meta_symbol = NULL;
+    lv_t *result;
+    lv_t *ptr;
+    token_t *t_next;
+
+    switch(tok->tok) {
+    case T_QUOTE:
+    case T_QUASIQUOTE:
+    case T_UNQUOTESPLICING:
+    case T_UNQUOTE:
+        if(tok->tok == T_QUOTE)
+            meta_symbol=lisp_create_symbol("quote");
+        else if(tok->tok == T_QUASIQUOTE)
+            meta_symbol = lisp_create_symbol("quasiquote");
+        else if(tok->tok == T_UNQUOTESPLICING)
+            meta_symbol = lisp_create_symbol("unquotesplicing");
+        else
+            meta_symbol = lisp_create_symbol("unquote");
+
+        t_next = c_get_token(exec, port);
+        return lisp_create_pair(meta_symbol, c_parse_sexpr(exec, port, t_next));
+
+    case T_OPENPAREN:
+        t_next = c_get_token(exec, port);
+        return c_parse_list(exec, port, t_next);
+        break;
+
+    case T_EOF:
+        return lisp_create_null();
+
+    default:
+        return c_parse_atom(exec, port, tok);
+    }
+
+    assert(0);
+}
+
+static lv_t *c_parse_list(lexec_t *exec, lv_t *port, token_t *tok) {
+    lv_t *res, *ptr, *pnew;
+    token_t *t_next;
+
+    res = NULL;
+    ptr = res;
+
+    t_next = tok;
+    while(1) {
+        switch(t_next->tok) {
+        case T_DOT:
+            t_next = c_get_token(exec, port);
+            rt_assert(ptr, le_syntax, "unexpected '.'");
+
+            L_CDR(ptr) = c_parse_sexpr(exec, port, t_next);
+            t_next = c_get_token(exec, port);
+            rt_assert(t_next->tok == T_CLOSEPAREN, le_syntax, "expecting ')'");
+            return res;
+        case T_CLOSEPAREN:
+            if(!res)
+                return lisp_create_null();
+            return res;
+        default:
+            pnew = lisp_create_pair(c_parse_sexpr(exec, port, t_next), NULL);
+            if(!ptr) {
+                res = pnew;
+                ptr = pnew;
+            } else {
+                L_CDR(ptr) = pnew;
+                ptr = pnew;
+            }
+            break;
+        }
+        t_next = c_get_token(exec, port);
+    }
+
+}
+
+static lv_t *c_parse_atom(lexec_t *exec, lv_t *port, token_t *tok) {
+    lv_t *pnew;
+
+    switch(tok->tok) {
+    case T_INTEGER:
+        return lisp_create_int_str(tok->s_value);
+    case T_RATIONAL:
+        return lisp_create_rational_str(tok->s_value);
+    case T_FLOAT:
+        return lisp_create_float_str(tok->s_value);
+    case T_BOOL:
+        if(!strcmp(tok->s_value, "#t"))
+            return lisp_create_bool(1);
+        if(!strcmp(tok->s_value, "#f"))
+            return lisp_create_bool(0);
+        rt_assert(0, le_syntax, "invalid bool value");
+        break;
+    case T_SYMBOL:
+        return lisp_create_symbol(tok->s_value);
+    case T_STRING:
+        return lisp_create_string(tok->s_value);
+    default:
+        assert(0); /* unexpected type */
+    }
+}
+
+lv_t *p_parsetest(lexec_t *exec, lv_t *v) {
+    assert(exec);
+    assert(v && v->type == l_pair);
+
+    lv_t *port = c_open_string(exec, v, PD_INPUT);
+
+    return c_parse(exec, port);
 }
 
 lv_t *p_toktest(lexec_t *exec, lv_t *v) {
