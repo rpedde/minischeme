@@ -177,7 +177,7 @@ That said, this is general status toward a r[57]ish scheme:
 ## eval ##
 
 * [ ] eval
-* [X] scheme-report-environment
+* [X] scheme-report-environment (5, to the degree it is implemented)
 * [X] null-environment
 * [ ] interaction-environment
 
@@ -185,21 +185,22 @@ That said, this is general status toward a r[57]ish scheme:
 
 * [ ] call-with-input-file (library)
 * [ ] call-with-output-file (library)
-* [ ] input-port?
-* [ ] output-port?
+* [X] input-port?
+* [X] output-port?
 * [ ] current-input-port
+* [ ] current-output-port
 * [ ] with-input-from-file
 * [ ] with-output-to-file
-* [ ] open-input-file
-* [ ] open-output-file
-* [ ] close-input-port
-* [ ] close-output-port
+* [X] open-input-file
+* [X] open-output-file
+* [X] close-input-port
+* [X] close-output-port
 
 ## input ##
 
-* [ ] read
-* [ ] read-char
-* [ ] peek-char
+* [X] read
+* [X] read-char
+* [X] peek-char
 * [ ] eof-object?
 * [ ] char-ready?
 
@@ -221,6 +222,11 @@ That said, this is general status toward a r[57]ish scheme:
 * [X] load
 * [ ] transcript-on
 * [ ] transcript-off
+
+## SRFI-6 ##
+* [X] open-input-string
+* [ ] open-output-string
+* [ ] get-output-string
 
 ## SRFI-69 ##
 

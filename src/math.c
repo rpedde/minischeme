@@ -30,6 +30,9 @@
 typedef enum math_comp_t { MC_EQ, MC_GT, MC_LT, MC_GTE, MC_LTE } math_comp_t;
 typedef enum math_op_t { MO_ADD, MO_SUB, MO_MUL, MO_DIV } math_op_t;
 typedef enum math_round_t { MR_FLOOR, MR_CEIL, MR_TRUNC, MR_ROUND } math_round_t;
+typedef enum math_trig_t { MT_SIN, MT_COS, MT_TAN,
+                           MT_ASIN, MT_ACOS, MT_ATAN
+} math_trig_t;
 
 static void math_promote(lv_t **a, lisp_type_t what) {
     lv_t *new_val;
@@ -598,6 +601,43 @@ lv_t *p_round(lexec_t *exec, lv_t *v) {
     return round_op(exec, v, MR_ROUND);
 }
 
+static lv_t *trig_op(lexec_t *exec, lv_t *v, math_trig_t op) {
+    lv_t *new_value;
+
+    assert(exec && v && v->type == l_pair);
+    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 argument");
+
+    lv_t *a0 = L_CAR(v);
+
+    rt_assert(math_numeric(a0),
+              le_type, "expecting numeric arguments");
+
+    math_promote(&a0, l_float);
+    new_value = lisp_create_float(0);
+
+    switch(op) {
+    case MT_SIN:
+        mpfr_sin(L_FLOAT(new_value), L_FLOAT(a0), MPFR_ROUND_TYPE);
+        break;
+    case MT_COS:
+        mpfr_cos(L_FLOAT(new_value), L_FLOAT(a0), MPFR_ROUND_TYPE);
+        break;
+    case MT_TAN:
+        mpfr_tan(L_FLOAT(new_value), L_FLOAT(a0), MPFR_ROUND_TYPE);
+        break;
+    case MT_ASIN:
+        mpfr_asin(L_FLOAT(new_value), L_FLOAT(a0), MPFR_ROUND_TYPE);
+        break;
+    case MT_ACOS:
+        mpfr_acos(L_FLOAT(new_value), L_FLOAT(a0), MPFR_ROUND_TYPE);
+        break;
+    case MT_ATAN:
+        mpfr_atan(L_FLOAT(new_value), L_FLOAT(a0), MPFR_ROUND_TYPE);
+        break;
+    default:
+        assert(0);
+    }
+}
 
 lv_t *p_exp(lexec_t *exec, lv_t *v) {
 }
@@ -606,21 +646,27 @@ lv_t *p_log(lexec_t *exec, lv_t *v) {
 }
 
 lv_t *p_sin(lexec_t *exec, lv_t *v) {
+    return trig_op(exec, v, MT_SIN);
 }
 
 lv_t *p_cos(lexec_t *exec, lv_t *v) {
+    return trig_op(exec, v, MT_COS);
 }
 
 lv_t *p_tan(lexec_t *exec, lv_t *v) {
+    return trig_op(exec, v, MT_TAN);
 }
 
 lv_t *p_asin(lexec_t *exec, lv_t *v) {
+    return trig_op(exec, v, MT_ASIN);
 }
 
 lv_t *p_acos(lexec_t *exec, lv_t *v) {
+    return trig_op(exec, v, MT_ACOS);
 }
 
 lv_t *p_atan(lexec_t *exec, lv_t *v) {
+    return trig_op(exec, v, MT_ATAN);
 }
 
 lv_t *p_sqrt(lexec_t *exec, lv_t *v) {

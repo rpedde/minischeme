@@ -99,11 +99,18 @@ static environment_list_t s_env_prim[] = {
     { "p-format", p_format },
 
     // port functions
-    { "p-open-file", p_open_file },
-    { "p-port-filename", p_port_filename },
-    { "p-set-port-filename!", p_set_port_filename },
-    { "p-port-mode", p_port_mode },
-    { "p-file-port?", p_file_port_p },
+    { "p-input-port?", p_input_portp },
+    { "p-output-port?", p_output_portp },
+    { "p-open-input-file", p_open_input_file },
+    { "p-open-output-file", p_open_output_file },
+    { "p-close-input-port", p_close_input_port },
+    { "p-close-output-port", p_close_output_port },
+    { "p-read-char", p_read_char },
+    { "p-peek-char", p_peek_char },
+
+    { "p-toktest", p_toktest },
+    { "p-parsetest", p_parsetest },
+    { "p-read", p_read },
 
     // char functions
     { "p-char?", p_charp },
@@ -136,6 +143,16 @@ static environment_list_t s_env_prim[] = {
     { "p-ceiling", p_ceiling },
     { "p-truncate", p_truncate },
     { "p-round", p_round },
+    { "p-sin", p_sin },
+    { "p-cos", p_cos },
+    { "p-tan", p_tan },
+    { "p-asin", p_asin },
+    { "p-acos", p_acos },
+    { "p-atan", p_atan },
+
+    // SRFI-6
+    { "p-open-input-string", p_open_input_string },
+
     { NULL, NULL }
 };
 
@@ -430,7 +447,7 @@ lv_t *lisp_create_type(void *value, lisp_type_t type) {
         L_FN(result) = (lisp_method_t)value;
         break;
     case l_port:
-        L_P_FP(result) = (FILE*)value;
+        L_PORT(result) = (port_info_t *)value;
         break;
     default:
         assert(0);
@@ -589,12 +606,8 @@ lv_t *lisp_create_native_fn(lisp_method_t value) {
  *
  * FIXME: needs fclose finalizer
  */
-lv_t *lisp_create_port(FILE *fp, lv_t *filename, lv_t *mode) {
-    lv_t *p = lisp_create_type((void*)fp, l_port);
-
-    L_P_MODE(p) = mode;
-    L_P_FN(p) = filename;
-
+lv_t *lisp_create_port(port_info_t *pi) {
+    lv_t *p = lisp_create_type((void*)pi, l_port);
 
     return p;
 }
@@ -717,9 +730,11 @@ int lisp_snprintf(char *buf, int len, lv_t *v) {
     case l_char:
         return snprintf(buf, len, "%c", L_CHAR(v));
         break;
+    case l_port:
+        return snprintf(buf, len, "<port@%p>", v);
+        break;
     default:
         // missing a type check.
-        fprintf(stderr, "Crazy type: %d\n", v->type);
         assert(0);
     }
 

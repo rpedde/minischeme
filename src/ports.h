@@ -21,10 +21,33 @@
 #ifndef _PORTS_H_
 #define _PORTS_H_
 
-extern lv_t *p_open_file(lexec_t *exec, lv_t *v);
-extern lv_t *p_port_filename(lexec_t *exec, lv_t *v);
-extern lv_t *p_set_port_filename(lexec_t *exec, lv_t *v);
-extern lv_t *p_port_mode(lexec_t *exec, lv_t *v);
-extern lv_t *p_file_port_p(lexec_t *exec, lv_t *v);
+/* ports */
+extern lv_t *p_input_portp(lexec_t *exec, lv_t *v);
+extern lv_t *p_output_portp(lexec_t *exec, lv_t *v);
+extern lv_t *p_current_input_port(lexec_t *exec, lv_t *v);
+extern lv_t *p_current_output_port(lexec_t *exec, lv_t *v);
+extern lv_t *p_with_input_from_file(lexec_t *exec, lv_t *v);
+extern lv_t *p_with_output_to_file(lexec_t *exec, lv_t *v);
+extern lv_t *p_open_input_file(lexec_t *exec, lv_t *v);
+extern lv_t *p_open_output_file(lexec_t *exec, lv_t *v);
+extern lv_t *p_close_input_port(lexec_t *exec, lv_t *v);
+extern lv_t *p_close_output_port(lexec_t *exec, lv_t *v);
+
+extern ssize_t c_read(lexec_t *exec, lv_t *port, char *buffer, size_t len);
+extern ssize_t c_write(lexec_t *exec, lv_t *port, char *buffer, size_t len);
+
+/* srfi-6 */
+extern lv_t *p_open_input_string(lexec_t *exec, lv_t *v);
+extern lv_t *p_open_output_string(lexec_t *exec, lv_t *v);
+extern lv_t *p_get_output_string(lexec_t *exec, lv_t *v);
+
+/* input */
+extern lv_t *p_read_char(lexec_t *exec, lv_t *v);
+extern lv_t *p_peek_char(lexec_t *exec, lv_t *v);
+
+/* testing */
+extern lv_t *p_toktest(lexec_t *exec, lv_t *v);
+extern lv_t *p_parsetest(lexec_t *exec, lv_t *v);
+extern lv_t *p_read(lexec_t *exec, lv_t *v);
 
 #endif /* _PORTS_H_ */
