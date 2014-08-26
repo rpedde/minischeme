@@ -143,6 +143,12 @@ static environment_list_t s_env_prim[] = {
     { "p-ceiling", p_ceiling },
     { "p-truncate", p_truncate },
     { "p-round", p_round },
+    { "p-sin", p_sin },
+    { "p-cos", p_cos },
+    { "p-tan", p_tan },
+    { "p-asin", p_asin },
+    { "p-acos", p_acos },
+    { "p-atan", p_atan },
 
     // SRFI-6
     { "p-open-input-string", p_open_input_string },

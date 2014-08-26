@@ -115,6 +115,12 @@
 (define ceiling p-ceiling)
 (define truncate p-truncate)
 (define round p-round)
+;; (define sin p-sin)
+;; (define cos p-cos)
+;; (define tan p-tan)
+;; (define asin p-asin)
+;; (define acos p-acos)
+;; (define atan p-atan)
 
 ;; srfi-6
 (define open-input-string p-open-input-string)
