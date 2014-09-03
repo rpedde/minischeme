@@ -12,7 +12,7 @@ check_PROGRAMS = selfcheck
 libminischeme_la_SOURCES = tokenizer.l primitives.h primitives.c \
 	murmurhash.h murmurhash.c builtins.h builtins.c grammar.c \
 	lisp-types.h lisp-types.c redblack.h redblack.c ports.h ports.c \
-	char.h char.c math.c math.h
+	char.h char.c math.c math.h parser.c parser.h
 
 libminischeme_la_LIBADD = -lgc -lgmp -lmpfr
 

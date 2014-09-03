@@ -1,6 +1,4 @@
-parser.c
 tokenizer.c
-parser.h
 *~
 .deps
 *.o

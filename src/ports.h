@@ -21,6 +21,10 @@
 #ifndef _PORTS_H_
 #define _PORTS_H_
 
+/* enums for c helpers */
+typedef enum port_type_t { PT_FILE, PT_STRING } port_type_t;
+typedef enum port_dir_t { PD_INPUT, PD_OUTPUT, PD_BOTH } port_dir_t;
+
 /* ports */
 extern lv_t *p_input_portp(lexec_t *exec, lv_t *v);
 extern lv_t *p_output_portp(lexec_t *exec, lv_t *v);
@@ -36,6 +40,14 @@ extern lv_t *p_close_output_port(lexec_t *exec, lv_t *v);
 extern ssize_t c_read(lexec_t *exec, lv_t *port, char *buffer, size_t len);
 extern ssize_t c_write(lexec_t *exec, lv_t *port, char *buffer, size_t len);
 
+/* helpers */
+extern lv_t *c_open_file(lexec_t *exec, lv_t *v, port_dir_t dir);
+extern int c_read_char(lexec_t *exec, lv_t *port);
+extern int c_peek_char(lexec_t *exec, lv_t *port);
+extern port_dir_t c_port_direction(lexec_t *exec, lv_t *port);
+extern int c_port_eof(lexec_t *exec, lv_t *port);
+extern lv_t *c_open_string(lexec_t *exec, lv_t *v, port_dir_t dir);
+
 /* srfi-6 */
 extern lv_t *p_open_input_string(lexec_t *exec, lv_t *v);
 extern lv_t *p_open_output_string(lexec_t *exec, lv_t *v);
@@ -44,10 +56,5 @@ extern lv_t *p_get_output_string(lexec_t *exec, lv_t *v);
 /* input */
 extern lv_t *p_read_char(lexec_t *exec, lv_t *v);
 extern lv_t *p_peek_char(lexec_t *exec, lv_t *v);
-
-/* testing */
-extern lv_t *p_toktest(lexec_t *exec, lv_t *v);
-extern lv_t *p_parsetest(lexec_t *exec, lv_t *v);
-extern lv_t *p_read(lexec_t *exec, lv_t *v);
 
 #endif /* _PORTS_H_ */

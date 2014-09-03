@@ -41,6 +41,7 @@
 #include "ports.h"
 #include "char.h"
 #include "math.h"
+#include "parser.h"
 
 typedef struct hash_node_t {
     uint32_t key;
