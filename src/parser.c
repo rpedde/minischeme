@@ -54,6 +54,103 @@ static lv_t *c_parse_sexpr(lexec_t *exec, lv_t *port, token_t *tok);
 static lv_t *c_parse_list(lexec_t *exec, lv_t *port, token_t *tok);
 static lv_t *c_parse_atom(lexec_t *exec, lv_t *port, token_t *tok);
 
+/* special characters */
+typedef struct special_char_t {
+    char *name;
+    int value;
+} special_char_t;
+
+special_char_t special_chars[] = {
+        { "nul", 0 },
+        { "soh", 1 },
+        { "stx", 2 },
+        { "etx", 3 },
+        { "eot", 4 },
+        { "enq", 5 },
+        { "ack", 6 },
+        { "bel", 7 },
+        { "bs", 8 },
+        { "ht", 9 },
+        { "lf", 10 },
+        { "vt", 11 },
+        { "ff", 12 },
+        { "cr", 13 },
+        { "so", 14 },
+        { "si", 15 },
+        { "dle", 16 },
+        { "dc1", 17 },
+        { "dc2", 18 },
+        { "dc3", 19 },
+        { "dc4", 20 },
+        { "nak", 21 },
+        { "syn", 22 },
+        { "etb", 23 },
+        { "can", 24 },
+        { "em", 25 },
+        { "sub", 26 },
+        { "esc", 27 },
+        { "fs", 28 },
+        { "gs", 29 },
+        { "rs", 30 },
+        { "us", 31 },
+        { "del", 127 },
+        { "altmode", 27 },
+        { "backnext", 31 },
+        { "backspace", 8 },
+        { "call", 26 },
+        { "linefeed", 10 },
+        { "page", 12 },
+        { "return", 13 },
+        { "rubout", 127 },
+        { "space", 32 },
+        { "tab", 9 },
+
+        /* non-standard */
+        { "newline", 10 },
+        { NULL, 0 }
+};
+
+
+/**
+ * turn a special char string into a character
+ * value.
+ *
+ * Forms are:
+ *  #\<special value>
+ *  #\x<hex digit>
+ *  #\<char value>
+ *
+ * probably others, like octal digits, but meh.
+ */
+lv_t *c_char_value(lexec_t *exec, char *value) {
+    int val;
+    special_char_t *current = special_chars;
+
+    assert(exec && value);
+    assert(value[0] == '#');
+    assert(value[1] == '\\');
+
+    if(strlen(&value[2]) == 1) {
+        return lisp_create_char(value[2]);
+    } else if(value[2] == 'x') {
+        rt_assert(strlen(&value[3]) == 2, le_syntax, "invalid char specifier");
+        if(sscanf(&value[3], "%02x", &val) != 1) {
+            rt_assert(0, le_syntax, "malformed hex value");
+        }
+        return lisp_create_char(val);
+    } else {
+        while(current->name && (strcasecmp(current->name, &value[2])))
+            current++;
+
+        rt_assert(current->name, le_syntax, "unknown special character");
+        return lisp_create_char(current->value);
+    }
+
+
+    /* can't happen */
+    assert(0);
+    return lisp_create_null();
+}
 
 token_t *c_new_token(token_type_t tok, char *s_value) {
     token_t *pnew;
@@ -91,8 +188,7 @@ token_t *c_determine_token(char *val) {
     if(!strcmp(val, ".")) {
         return c_new_token(T_DOT, NULL);
     } else if(!strncmp(val, "#\\", 2)) {
-        /* FIXME */
-        fprintf(stderr, "char of some type\n");
+        return c_new_token(T_CHAR, val);
     } else if(!strcmp(val, "'")) {
         return c_new_token(T_QUOTE, NULL);
     } else if(!strcmp(val, ",")) {
@@ -380,6 +476,8 @@ static lv_t *c_parse_atom(lexec_t *exec, lv_t *port, token_t *tok) {
         return lisp_create_symbol(tok->s_value);
     case T_STRING:
         return lisp_create_string(tok->s_value);
+    case T_CHAR:
+        return c_char_value(exec, tok->s_value);
     default:
         assert(0); /* unexpected type */
     }
