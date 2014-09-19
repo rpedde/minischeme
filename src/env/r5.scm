@@ -68,6 +68,11 @@
 ;; (define cdddar (lambda (x) (cdr (cdr (cdr (car x))))))
 ;; (define cddddr (lambda (x) (cdr (cdr (cdr (cdr x))))))
 
+;; error - this is r7, not r5
+;; (define error-object? p-error-object?)
+;; (define read-error? p-read-error?)
+;; (define file-error? p-file-error?)
+;; (define eof-error? p-eof-error?)
 
 ;; ports
 (define input-port? p-input-port?)
@@ -78,6 +83,7 @@
 (define close-output-port p-close-output-port)
 (define read-char p-read-char)
 (define peek-char p-peek-char)
+(define eof-object? p-eof-error?)
 
 (define toktest p-toktest)
 (define parsetest p-parsetest)

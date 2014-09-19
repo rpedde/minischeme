@@ -330,7 +330,7 @@ lv_t *p_read_char(lexec_t *exec, lv_t *v) {
     result = c_read_char(exec, port);
 
     if(result == -1)
-        return lisp_create_null();  /* eof */
+        return lisp_create_err(les_eof);  /* eof */
 
     return lisp_create_char(result);
 }
@@ -353,7 +353,7 @@ lv_t *p_peek_char(lexec_t *exec, lv_t *v) {
     result = c_peek_char(exec, port);
 
     if(result == -1)
-        return lisp_create_null();  /* eof */
+        return lisp_create_err(les_eof);  /* eof */
     return lisp_create_char(result);
 }
 

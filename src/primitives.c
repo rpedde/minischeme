@@ -103,6 +103,7 @@ static environment_list_t s_env_prim[] = {
     { "p-error-object?", p_error_objectp },
     { "p-read-error?", p_read_errorp },
     { "p-file-error?", p_file_errorp },
+    { "p-eof-error?", p_eof_errorp },
 
     // port functions
     { "p-input-port?", p_input_portp },
@@ -750,6 +751,9 @@ int lisp_snprintf(char *buf, int len, lv_t *v) {
         break;
     case l_port:
         return snprintf(buf, len, "<port@%p>", v);
+        break;
+    case l_err:
+        return snprintf(buf, len, "<error@%p:%d>", v, L_ERR(v));
         break;
     default:
         // missing a type check.
@@ -1669,11 +1673,10 @@ lv_t *p_error_objectp(lexec_t *exec, lv_t *v) {
 }
 
 /**
- * (file-error? obj)
- *
- * returns #t if obj is the result of a file error, else #f
+ * determine if an error object is a particular
+ * subtype
  */
-lv_t *p_file_errorp(lexec_t *exec, lv_t *v) {
+lv_t *c_error_type(lexec_t *exec, lv_t *v, lisp_errsubtype_t s) {
     assert(exec && v);
     assert(v->type == l_pair);
 
@@ -1681,10 +1684,19 @@ lv_t *p_file_errorp(lexec_t *exec, lv_t *v) {
 
     lv_t *a0 = L_CAR(v);
 
-    if((a0->type == l_err) && (L_ERR(a0) == les_file))
+    if((a0->type == l_err) && (L_ERR(a0) == s))
         return lisp_create_bool(1);
 
     return lisp_create_bool(0);
+}
+
+/**
+ * (file-error? obj)
+ *
+ * returns #t if obj is the result of a file error, else #f
+ */
+lv_t *p_file_errorp(lexec_t *exec, lv_t *v) {
+    return c_error_type(exec, v, les_file);
 }
 
 
@@ -1694,15 +1706,15 @@ lv_t *p_file_errorp(lexec_t *exec, lv_t *v) {
  * returns #t if obj is the result of a file read error, else #f
  */
 lv_t *p_read_errorp(lexec_t *exec, lv_t *v) {
-    assert(exec && v);
-    assert(v->type == l_pair);
+    return c_error_type(exec, v, les_read);
+}
 
-    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 arg");
 
-    lv_t *a0 = L_CAR(v);
-
-    if((a0->type == l_err) && (L_ERR(a0) == les_read))
-        return lisp_create_bool(1);
-
-    return lisp_create_bool(0);
+/**
+ * (eof-error? obj)
+ *
+ * returns #t if obj is the result of eof, else #f
+ */
+lv_t *p_eof_errorp(lexec_t *exec, lv_t *v) {
+    return c_error_type(exec, v, les_eof);
 }

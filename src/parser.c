@@ -408,7 +408,7 @@ static lv_t *c_parse_sexpr(lexec_t *exec, lv_t *port, token_t *tok) {
         break;
 
     case T_EOF:
-        return lisp_create_null();
+        return lisp_create_err(les_read);
 
     default:
         return c_parse_atom(exec, port, tok);

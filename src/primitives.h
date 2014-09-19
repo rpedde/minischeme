@@ -99,7 +99,7 @@ extern void c_hash_walk(lv_t *hash, void(*callback)(lv_t *key, lv_t *value));
 extern lv_t *p_error_objectp(lexec_t *exec, lv_t *v);
 extern lv_t *p_file_errorp(lexec_t *exec, lv_t *v);
 extern lv_t *p_read_errorp(lexec_t *exec, lv_t *v);
-
+extern lv_t *p_eof_errorp(lexec_t *exec, lv_t *v);
 
 /**
  * inspection utilities
