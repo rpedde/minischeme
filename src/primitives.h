@@ -64,6 +64,7 @@ extern lv_t *lisp_create_char(char value);
 extern lv_t *lisp_create_bool(int value);
 extern lv_t *lisp_create_hash(void);
 extern lv_t *lisp_create_null(void);
+extern lv_t *lisp_create_err(lisp_errsubtype_t value);
 extern lv_t *lisp_create_native_fn(lisp_method_t value);
 extern lv_t *lisp_create_port(port_info_t *pi);
 extern lv_t *lisp_create_lambda(lexec_t *exec, lv_t *formals, lv_t *body);
@@ -91,6 +92,14 @@ extern int c_hash_delete(lv_t *hash, lv_t *key);
 extern int c_hash_insert(lv_t *hash, lv_t *key, lv_t *value);
 extern lv_t *c_env_lookup(lv_t *env, lv_t *key);
 extern void c_hash_walk(lv_t *hash, void(*callback)(lv_t *key, lv_t *value));
+
+/**
+ * error utilities
+ */
+extern lv_t *p_error_objectp(lexec_t *exec, lv_t *v);
+extern lv_t *p_file_errorp(lexec_t *exec, lv_t *v);
+extern lv_t *p_read_errorp(lexec_t *exec, lv_t *v);
+
 
 /**
  * inspection utilities

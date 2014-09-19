@@ -36,7 +36,8 @@
     C(l_null) \
     C(l_port) \
     C(l_char) \
-    C(l_fn)
+    C(l_fn) \
+    C(l_err)
 
 #define C(x) x,
 typedef enum lisp_type_t { LISP_TYPES l_max } lisp_type_t;
@@ -80,6 +81,11 @@ typedef enum lisp_funtype_t {
     lf_macro
 } lisp_funtype_t;
 
+typedef enum lisp_errsubtype_t {
+    les_read,
+    les_file
+} lisp_errsubtype_t;
+
 typedef struct lv_t lv_t;
 
 typedef struct lstack_t {
@@ -113,6 +119,7 @@ typedef struct port_info_t port_info_t;  /* ports.c */
 #define L_CDR(what)     (what)->value.p.cdr
 #define L_CAR(what)     (what)->value.p.car
 #define L_HASH(what)    (what)->value.h.value
+#define L_ERR(what)     (what)->value.e.value
 
 #define L_FN(what)      (what)->value.l.fn
 #define L_FN_FTYPE(what) (what)->value.l.ftype
@@ -171,6 +178,10 @@ typedef struct lisp_hash_t {
 typedef struct lisp_null_t {
 } lisp_null_t;
 
+typedef struct lisp_err_t {
+    lisp_errsubtype_t value;
+} lisp_err_t;
+
 typedef struct lisp_fn_t {
     lisp_method_t fn;
     lisp_funtype_t ftype;
@@ -200,6 +211,7 @@ typedef struct lv_t {
         lisp_pair_t p;
         lisp_hash_t h;
         lisp_fn_t l;
+        lisp_err_t e;
         lisp_port_t port;
     } value;
 } lv_t;

@@ -99,6 +99,11 @@ static environment_list_t s_env_prim[] = {
     { "p-display", p_display },
     { "p-format", p_format },
 
+    // error functions
+    { "p-error-object?", p_error_objectp },
+    { "p-read-error?", p_read_errorp },
+    { "p-file-error?", p_file_errorp },
+
     // port functions
     { "p-input-port?", p_input_portp },
     { "p-output-port?", p_output_portp },
@@ -444,6 +449,9 @@ lv_t *lisp_create_type(void *value, lisp_type_t type) {
     case l_str:
         L_STR(result) = safe_strdup((char*)value);
         break;
+    case l_err:
+        L_ERR(result) = *((lisp_errsubtype_t *)value);
+        break;
     case l_fn:
         L_FN(result) = (lisp_method_t)value;
         break;
@@ -601,6 +609,15 @@ lv_t *lisp_create_native_fn(lisp_method_t value) {
 
     return fn;
 }
+
+/**
+ * create an error object
+ *
+ **/
+lv_t *lisp_create_err(lisp_errsubtype_t value) {
+    return lisp_create_type((void*)&value, l_err);
+}
+
 
 /**
  * create a port type
@@ -1630,4 +1647,62 @@ lv_t *lisp_execute(lexec_t *exec, lv_t *v) {
         exec->ehandler(exec);
 
     return NULL;
+}
+
+/**
+ * (error-object? obj)
+ *
+ * returns #t if obj is an error object, else #f
+ */
+lv_t *p_error_objectp(lexec_t *exec, lv_t *v) {
+    assert(exec && v);
+    assert(v->type == l_pair);
+
+    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 arg");
+
+    lv_t *a0 = L_CAR(v);
+
+    if(a0->type == l_err)
+        return lisp_create_bool(1);
+
+    return lisp_create_bool(0);
+}
+
+/**
+ * (file-error? obj)
+ *
+ * returns #t if obj is the result of a file error, else #f
+ */
+lv_t *p_file_errorp(lexec_t *exec, lv_t *v) {
+    assert(exec && v);
+    assert(v->type == l_pair);
+
+    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 arg");
+
+    lv_t *a0 = L_CAR(v);
+
+    if((a0->type == l_err) && (L_ERR(a0) == les_file))
+        return lisp_create_bool(1);
+
+    return lisp_create_bool(0);
+}
+
+
+/**
+ * (read-error? obj)
+ *
+ * returns #t if obj is the result of a file read error, else #f
+ */
+lv_t *p_read_errorp(lexec_t *exec, lv_t *v) {
+    assert(exec && v);
+    assert(v->type == l_pair);
+
+    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 arg");
+
+    lv_t *a0 = L_CAR(v);
+
+    if((a0->type == l_err) && (L_ERR(a0) == les_read))
+        return lisp_create_bool(1);
+
+    return lisp_create_bool(0);
 }
