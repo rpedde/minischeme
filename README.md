@@ -56,12 +56,12 @@ That said, this is general status toward a r[57]ish scheme:
 
 * [ ] exp
 * [ ] log
-* [ ] sin
-* [ ] cos
-* [ ] tan
-* [ ] asin
-* [ ] acos
-* [ ] atan
+* [X] sin
+* [X] cos
+* [X] tan
+* [X] asin
+* [X] acos
+* [X] atan
 * [ ] sqrt
 * [ ] expt
 
