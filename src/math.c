@@ -637,6 +637,8 @@ static lv_t *trig_op(lexec_t *exec, lv_t *v, math_trig_t op) {
     default:
         assert(0);
     }
+
+    return new_value;
 }
 
 lv_t *p_exp(lexec_t *exec, lv_t *v) {
