@@ -34,6 +34,7 @@
 (define cdr p-cdr)
 (define gensym p-gensym)
 (define display p-display)
+(define write p-write)
 (define format p-format)
 
 ;; caar...cddddr

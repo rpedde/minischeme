@@ -95,6 +95,7 @@ static environment_list_t s_env_prim[] = {
     { "p-cdr", p_cdr },
     { "p-gensym", p_gensym },
     { "p-display", p_display },
+    { "p-write", p_write },
     { "p-format", p_format },
 
     // error functions
@@ -679,7 +680,17 @@ void lisp_stamp_value(lv_t *v, int row, int col, char *file) {
     v->file = file;
 }
 
-int lisp_snprintf(char *buf, int len, lv_t *v) {
+/**
+ * print the object specified by v in the provided buffer.
+ * follows standard snprintf rules, in that it returns the
+ * number of bytes required to print if an insufficient buffer
+ * length is provided.
+ *
+ * if display is true, then the results are printed as human
+ * readable (p_display), otherwise it is printed as machine
+ * readable (p_write)
+ */
+int lisp_snprintf(lexec_t *exec, char *buf, int len, lv_t *v, int display) {
     int pair_len = 0;
 
     switch(v->type) {
@@ -698,7 +709,10 @@ int lisp_snprintf(char *buf, int len, lv_t *v) {
     case l_sym:
         return snprintf(buf, len, "%s", L_SYM(v));
     case l_str:
-        return snprintf(buf, len, "\"%s\"", L_STR(v));
+        if(display)
+            return snprintf(buf, len, "%s", L_STR(v));
+        else
+            return snprintf(buf, len, "\"%s\"", L_STR(v));
     case l_pair:
         if(len >= 1)
             sprintf(buf, "(");
@@ -708,18 +722,18 @@ int lisp_snprintf(char *buf, int len, lv_t *v) {
         lv_t *vp = v;
 
         while(vp && L_CAR(vp)) {
-            pair_len += lisp_snprintf(buf + pair_len,
+            pair_len += lisp_snprintf(exec, buf + pair_len,
                                       (len - pair_len) > 0 ? len - pair_len : 0,
-                                      L_CAR(vp));
+                                      L_CAR(vp), display);
 
             if(L_CDR(vp) && (L_CDR(vp)->type != l_pair)) {
                 pair_len += snprintf(buf + pair_len,
                                      (len - pair_len) > 0 ? len - pair_len : 0,
                                      " . ");
 
-                pair_len += lisp_snprintf(buf + pair_len,
+                pair_len += lisp_snprintf(exec, buf + pair_len,
                                           (len - pair_len) > 0 ? len - pair_len : 0,
-                                          L_CDR(vp));
+                                          L_CDR(vp), display);
                 vp = NULL;
             } else {
                 vp = L_CDR(vp);
@@ -739,18 +753,25 @@ int lisp_snprintf(char *buf, int len, lv_t *v) {
         return pair_len;
         break;
     case l_fn:
+        rt_assert(!display, le_type, "cannot display function types");
+
         if(L_FN(v) == NULL)
             return snprintf(buf, len, "<lambda@%p>", v);
         else
             return snprintf(buf, len, "<built-in@%p>", v);
         break;
     case l_char:
-        return snprintf(buf, len, "%c", L_CHAR(v));
+        if(display)
+            return snprintf(buf, len, "%c", L_CHAR(v));
+        else
+            return snprintf(buf, len, "#\\x%02x", L_CHAR(v));
         break;
     case l_port:
+        rt_assert(!display, le_type, "cannot display port types");
         return snprintf(buf, len, "<port@%p>", v);
         break;
     case l_err:
+        rt_assert(!display, le_type, "cannot display error types");
         return snprintf(buf, len, "<error@%p:%d>", v, L_ERR(v));
         break;
     default:
@@ -760,12 +781,12 @@ int lisp_snprintf(char *buf, int len, lv_t *v) {
 
 }
 
-lv_t *lisp_str_from_value(lv_t *v) {
-    int len = lisp_snprintf(NULL, 0, v);
+lv_t *lisp_str_from_value(lexec_t *exec, lv_t *v, int display) {
+    int len = lisp_snprintf(exec, NULL, 0, v, display);
     char *buf = safe_malloc(len + 1);
 
     memset(buf, 0, len + 1);
-    lisp_snprintf(buf, len + 1, v);
+    lisp_snprintf(exec, buf, len + 1, v, display);
 
     return lisp_create_string(buf);
 }

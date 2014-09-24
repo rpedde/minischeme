@@ -107,8 +107,8 @@ extern lv_t *p_eof_errorp(lexec_t *exec, lv_t *v);
 extern void lisp_dump_value(int fd, lv_t *value, int level);
 extern int c_list_length(lv_t *v);
 extern lv_t *c_make_list(lv_t *item, ...);
-extern lv_t *lisp_str_from_value(lv_t *v);
-extern int lisp_snprintf(char *buf, int len, lv_t *v);
+extern lv_t *lisp_str_from_value(lexec_t *exec, lv_t *v, int display);
+extern int lisp_snprintf(lexec_t *exec, char *buf, int len, lv_t *v, int display);
 
 /**
  * actual language items

@@ -206,8 +206,8 @@ That said, this is general status toward a r[57]ish scheme:
 
 ## output ##
 
-* [ ] write (machine-readable)
-* [X] display (human readable) [ not quite right... ]
+* [X] write (machine-readable)
+* [X] display (human readable) [ mostly right... ]
 * [ ] newline
 * [ ] write-char
 

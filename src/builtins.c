@@ -305,7 +305,13 @@ lv_t *p_gensym(lexec_t *exec, lv_t *v) {
 }
 
 /**
- * print a string
+ * (display obj)
+ * (display obj port)
+ *
+ * write a representation of obj to the given port
+ * (or current-output-port if unspecified)
+ *
+ * returns nil
  */
 lv_t *p_display(lexec_t *exec, lv_t *v) {
     lv_t *str;
@@ -314,7 +320,30 @@ lv_t *p_display(lexec_t *exec, lv_t *v) {
 
     rt_assert(c_list_length(v) == 1, le_arity, "display arity");
 
-    str = lisp_str_from_value(L_CAR(v));
+    str = lisp_str_from_value(exec, L_CAR(v), 1);
+    fprintf(stdout, "%s", L_STR(str));
+    fflush(stdout);
+
+    return lisp_create_null();
+}
+
+/**
+ * (write obj)
+ * (write obj port)
+ *
+ * write a representation of obj to the given port
+ * (or current-output-port if unspecified)
+ *
+ * returns nil
+ */
+lv_t *p_write(lexec_t *exec, lv_t *v) {
+    lv_t *str;
+
+    assert(v && v->type == l_pair);
+
+    rt_assert(c_list_length(v) == 1, le_arity, "display arity");
+
+    str = lisp_str_from_value(exec, L_CAR(v), 0);
     fprintf(stdout, "%s", L_STR(str));
     fflush(stdout);
 
@@ -354,7 +383,7 @@ lv_t *p_format(lexec_t *exec, lv_t *v) {
                 rt_assert(current_arg && L_CAR(current_arg),
                           le_arity, "insufficient args");
 
-                len += lisp_snprintf(NULL, 0, L_CAR(current_arg));
+                len += lisp_snprintf(exec, NULL, 0, L_CAR(current_arg), 1);
                 current_arg = L_CDR(current_arg);
                 break;
             case '~':
@@ -388,9 +417,9 @@ lv_t *p_format(lexec_t *exec, lv_t *v) {
             current++;
             if(*current == 'A' ||
                *current == 'S') {
-                item_len = lisp_snprintf(return_ptr,
+                item_len = lisp_snprintf(exec, return_ptr,
                                          len - (return_ptr - return_buffer) + 1,
-                                         L_CAR(current_arg));
+                                         L_CAR(current_arg), 1);
                 current_arg = L_CDR(current_arg);
                 return_ptr += item_len;
             } else if (*current == '~') {

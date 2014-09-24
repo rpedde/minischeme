@@ -100,7 +100,7 @@ void repl(int level) {
 
             dprintf(1, "%s = ", sym_buf);
 
-            str = lisp_str_from_value(result);
+            str = lisp_str_from_value(exec, result, 0);
             printf("%s\n", L_STR(str));
         }
 

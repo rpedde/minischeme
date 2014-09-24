@@ -42,6 +42,7 @@ extern lv_t *p_cdr(lexec_t *exec, lv_t *v);
 extern lv_t *p_cons(lexec_t *exec, lv_t *v);
 extern lv_t *p_gensym(lexec_t *exec, lv_t *v);
 extern lv_t *p_display(lexec_t *exec, lv_t *v);
+extern lv_t *p_write(lexec_t *exec, lv_t *v);
 extern lv_t *p_format(lexec_t *exec, lv_t *v);
 
 #endif /* __BUILTINS_H__ */
