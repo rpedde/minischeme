@@ -18,12 +18,8 @@ double float_value(lv_t *v) {
 
 int test_special_forms_quote(void *scaffold) {
     lv_t *r, *er;
-    lexec_t *exec;
-
+    lexec_t *exec = (lexec_t *)scaffold;
     int ex_result;
-
-    exec = lisp_context_new(5);
-    lisp_set_ehandler(exec, null_ehandler);
 
     r = c_parse_string(exec, "(quote 1)");
     er = c_sequential_eval(exec, r);
@@ -46,11 +42,8 @@ int test_special_forms_quote(void *scaffold) {
 
 int test_plus(void *scaffold) {
     lv_t *r;
-    lexec_t *exec;
     int ex_result;
-
-    exec = lisp_context_new(5);
-    lisp_set_ehandler(exec, null_ehandler);
+    lexec_t *exec = (lexec_t *)scaffold;
 
     /* test base case */
     r = c_sequential_eval(exec, c_parse_string(exec, "(+)"));
@@ -84,11 +77,9 @@ int test_plus(void *scaffold) {
 
 int test_equal(void *scaffold) {
     lv_t *r;
-    lexec_t *exec;
+    lexec_t *exec = (lexec_t *)scaffold;
     char *ev;
     int idx;
-
-    exec = lisp_context_new(5);
 
     char *passing[] = {
         "(equal? 1 1)",

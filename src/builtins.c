@@ -26,6 +26,7 @@
 #include "lisp-types.h"
 #include "primitives.h"
 #include "builtins.h"
+#include "parser.h"
 
 static lv_t *s_is_type(lv_t *v, lisp_type_t t) {
     if(v->type == t)
@@ -217,7 +218,7 @@ lv_t *p_load(lexec_t *exec, lv_t *v) {
     rt_assert(c_list_length(v) == 1, le_arity, "load arity");
     rt_assert(L_CAR(v)->type == l_str, le_type, "filename must be string");
 
-    return c_sequential_eval(exec, lisp_parse_file(L_STR(L_CAR(v))));
+    return c_sequential_eval(exec, c_parse_file(exec, L_STR(L_CAR(v))));
 }
 
 lv_t *p_length(lexec_t *exec, lv_t *v) {

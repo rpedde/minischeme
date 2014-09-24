@@ -196,8 +196,6 @@ token_t *c_determine_token(char *val) {
         return c_new_token(T_QUASIQUOTE, NULL);
     } else if(!strcmp(val, "#t") || !strcmp(val, "#f")) {
         return c_new_token(T_BOOL, val);
-    } else if(*val == '#') {
-        return c_new_token(T_CHAR, val);
     }
 
     /* now, check regex terms:
@@ -522,6 +520,53 @@ lv_t *p_toktest(lexec_t *exec, lv_t *v) {
     return lisp_create_null();
 }
 
+
+lv_t  *c_parse_port(lexec_t *exec, lv_t *port) {
+    jmp_buf jb;
+    lv_t *res, *current, *expr;
+    int exc;
+
+    assert(exec);
+    assert(port);
+
+    lisp_exec_push_ex(exec, &jb);
+
+    res = NULL;
+
+    /* right now, we return a lisp error object
+     * on eof, and rt_assert for any kind of parse
+     * error */
+    if((exc = setjmp(jb)) == 0) {
+        while(1) {
+            expr = c_parse(exec, port);
+            if(expr->type == l_err) { /* eof */
+                if(!res)
+                    return lisp_create_null();
+                return res;
+            }
+            /* one more valid term */
+            if(!res) {
+                res = lisp_create_pair(expr, NULL);
+                current = res;
+            } else {
+                L_CDR(current) = lisp_create_pair(expr, NULL);
+                current = L_CDR(current);
+            }
+        }
+        /* this gets automatically popped on an exception */
+        lisp_pop_ex(exec);
+    }
+
+    /* we'll let gc take care of the incomplete list */
+    if(exec->ehandler)
+        exec->ehandler(exec);
+    else
+        default_ehandler(exec);
+
+    return lisp_create_err(les_read);
+}
+
+
 /**
  * this is _not_ p_read.  this is a c courtesy wrapper
  * that assume reading from a repl.
@@ -536,9 +581,6 @@ lv_t *p_toktest(lexec_t *exec, lv_t *v) {
  * les_incomplete will be returned.
  */
 lv_t *c_parse_string(lexec_t *exec, char *str) {
-    jmp_buf jb;
-    lv_t *res, *current;
-    int exc;
     lv_t *l_port, *l_str;
 
     assert(exec);
@@ -547,38 +589,23 @@ lv_t *c_parse_string(lexec_t *exec, char *str) {
     l_str = lisp_create_string(str);
     l_port = c_open_string(exec, lisp_create_pair(l_str, NULL), PD_INPUT);
 
-    lisp_exec_push_ex(exec, &jb);
+    return c_parse_port(exec, l_port);
+}
 
-    res = NULL;
+/*
+ * again, this is not "load".  it's wrapped to
+ * be useful mostly just for bootstrapping the
+ * environment
+ */
+lv_t *c_parse_file(lexec_t *exec, char *file) {
+    lv_t *l_port, *l_file;
+    lv_t *retval;
 
-    /* right now, we return a lisp error object
-     * on eof, and rt_assert for any kind of parse
-     * error */
-    if((exc = setjmp(jb)) == 0) {
-        while(1) {
-            current = c_parse(exec, l_port);
-            if(current->type == l_err) { /* eof */
-                if(!res)
-                    return lisp_create_null();
-                return res;
-            }
-            /* one more valid term */
-            if(!res) {
-                res = lisp_create_pair(current, NULL);
-            } else {
-                L_CDR(res) = lisp_create_pair(current, NULL);
-                res = L_CDR(res);
-            }
-        }
-        /* this gets automatically popped on an exception */
-        lisp_pop_ex(exec);
-    }
+    assert(exec);
+    assert(file);
 
-    /* we'll let gc take care of the incomplete list */
-    if(exec->ehandler)
-        exec->ehandler(exec);
-    else
-        default_ehandler(exec);
+    l_file = lisp_create_string(file);
+    l_port = c_open_file(exec, lisp_create_pair(l_file, NULL), PD_INPUT);
 
-    return lisp_create_err(les_read);
+    return c_parse_port(exec, l_port);
 }

@@ -33,8 +33,6 @@
 #include "lisp-types.h"
 #include "primitives.h"
 #include "murmurhash.h"
-#include "grammar.h"
-#include "tokenizer.h"
 #include "redblack.h"
 
 #include "builtins.h"
@@ -1303,70 +1301,6 @@ lv_t *c_env_version(int version) {
 
     /* and return just the generated environment */
     return lisp_create_pair(L_CAR(exec->env), NULL);
-}
-
-/**
- * given a file, return an ast
- */
-lv_t *lisp_parse_file(char *file) {
-    void *parser = ParseAlloc(safe_malloc);
-    YY_BUFFER_STATE buffer;
-    int yv;
-    void *scanner;
-    YYLTYPE yyl = {0, 0, 0, 0};
-    YYLTYPE yyl_error;
-    YYSTYPE yys;
-    lexer_shared_t lst = { NULL, &yyl, file, &yyl_error, 0 };
-    FILE *f;
-
-    f = fopen(file, "r");
-
-    yylex_init(&scanner);
-    buffer = yy_create_buffer(f, 16384, scanner);
-    yy_switch_to_buffer(buffer, scanner);
-
-    while((yv = yylex(&yys, &yyl, scanner)) != 0) {
-        Parse(parser, yv, yys, &lst);
-    }
-
-    Parse(parser, 0, yys, &lst);
-    yylex_destroy(scanner);
-
-    fclose(f);
-
-    if(lst.error) {
-        return NULL;
-    }
-    return lst.result;
-}
-
-/**
- * given a string, return an ast
- */
-lv_t *lisp_parse_string(char *string) {
-    YY_BUFFER_STATE buffer;
-    void *parser = ParseAlloc(safe_malloc);
-    int yv;
-    void *scanner;
-    YYLTYPE yyl = {0, 0, 0, 0 };
-    YYSTYPE yys;
-    YYLTYPE yyl_error;
-    lexer_shared_t lst = { NULL, &yyl, "<stdin>", &yyl_error, 0 };
-
-    yylex_init(&scanner);
-    buffer = yy_scan_string(string, scanner);
-
-    while((yv = yylex(&yys, &yyl, scanner)) != 0) {
-        Parse(parser, yv, yys, &lst);
-    }
-
-    Parse(parser, 0, yys, &lst);
-    yylex_destroy(scanner);
-
-    if(lst.error) {
-        return NULL;
-    }
-    return lst.result;
 }
 
 lv_t *lisp_define(lexec_t *exec, lv_t *sym, lv_t *v) {

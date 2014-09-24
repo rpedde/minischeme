@@ -29,5 +29,6 @@ extern lv_t *p_read(lexec_t *exec, lv_t *v);
 /* FIXME: this shouldn't be here */
 extern lv_t *c_parse(lexec_t *exec, lv_t *port);
 extern lv_t *c_parse_string(lexec_t *exec, char *str);
+extern lv_t *c_parse_file(lexec_t *exec, char *file);
 
 #endif /* _PARSER_H_ */
