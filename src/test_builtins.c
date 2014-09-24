@@ -25,20 +25,20 @@ int test_special_forms_quote(void *scaffold) {
     exec = lisp_context_new(5);
     lisp_set_ehandler(exec, null_ehandler);
 
-    r = lisp_parse_string("(quote 1)");
+    r = c_parse_string(exec, "(quote 1)");
     er = c_sequential_eval(exec, r);
 
     assert(er->type == l_int);
     assert(int_value(er) == 1);
 
-    r = lisp_parse_string("(quote (1 2 3))");
+    r = c_parse_string(exec, "(quote (1 2 3))");
     er = c_sequential_eval(exec, r);
 
     assert(er->type == l_pair);
     assert(c_list_length(er) == 3);
 
     // expect arity exception
-    lisp_execute(exec, lisp_parse_string("(quote 1 2 3)"));
+    lisp_execute(exec, c_parse_string(exec, "(quote 1 2 3)"));
     assert(exec->exc == le_arity);
 
     return 1;
@@ -53,28 +53,28 @@ int test_plus(void *scaffold) {
     lisp_set_ehandler(exec, null_ehandler);
 
     /* test base case */
-    r = c_sequential_eval(exec, lisp_parse_string("(+)"));
+    r = c_sequential_eval(exec, c_parse_string(exec, "(+)"));
     assert(r->type == l_int);
     assert(int_value(r) == 0);
 
     /* test numeric adds only */
-    lisp_execute(exec, lisp_parse_string("(+ 1 (quote arf))"));
+    lisp_execute(exec, c_parse_string(exec, "(+ 1 (quote arf))"));
     assert(exec->exc == le_type);
 
     /* test simple int add */
-    r = c_sequential_eval(exec, lisp_parse_string("(+ 1 2)"));
+    r = c_sequential_eval(exec, c_parse_string(exec, "(+ 1 2)"));
 
     assert(r->type == l_int);
     assert(int_value(r) == 3);
 
     /* test promotion */
-    r = c_sequential_eval(exec, lisp_parse_string("(+ 1 0.2)"));
+    r = c_sequential_eval(exec, c_parse_string(exec, "(+ 1 0.2)"));
 
     assert(r->type == l_float);
     assert(float_value(r) == 1.2);
 
     /* test listwise adds */
-    r = c_sequential_eval(exec, lisp_parse_string("(+ 1 2 3)"));
+    r = c_sequential_eval(exec, c_parse_string(exec, "(+ 1 2 3)"));
 
     assert(r->type == l_int);
     assert(int_value(r) == 6);
@@ -108,7 +108,7 @@ int test_equal(void *scaffold) {
 
     idx = 0;
     while(passing[idx]) {
-        r = c_sequential_eval(exec, lisp_parse_string(passing[idx]));
+        r = c_sequential_eval(exec, c_parse_string(exec, passing[idx]));
         assert(r->type == l_bool);
         assert(L_BOOL(r) == 1);
         idx++;

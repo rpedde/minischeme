@@ -49,7 +49,6 @@ typedef struct token_t {
 #define TOKENIZER_MAX_TOKEN 256
 
 /* Forwards */
-static lv_t *c_parse(lexec_t *exec, lv_t *port);
 static lv_t *c_parse_sexpr(lexec_t *exec, lv_t *port, token_t *tok);
 static lv_t *c_parse_list(lexec_t *exec, lv_t *port, token_t *tok);
 static lv_t *c_parse_atom(lexec_t *exec, lv_t *port, token_t *tok);
@@ -360,7 +359,7 @@ lv_t *p_read(lexec_t *exec, lv_t *v) {
     return c_parse(exec, port);
 }
 
-static lv_t *c_parse(lexec_t *exec, lv_t *port) {
+lv_t *c_parse(lexec_t *exec, lv_t *port) {
     lv_t *res;
     token_t *tok;
 
@@ -369,7 +368,11 @@ static lv_t *c_parse(lexec_t *exec, lv_t *port) {
            c_port_direction(exec, port) != PD_OUTPUT);
 
     tok = c_get_token(exec, port);
+    if(tok->tok == T_EOF)
+        return lisp_create_err(les_read);
+
     res = c_parse_sexpr(exec, port, tok);
+    return res;
 }
 
 static lv_t *c_parse_sexpr(lexec_t *exec, lv_t *port, token_t *tok) {
@@ -400,7 +403,7 @@ static lv_t *c_parse_sexpr(lexec_t *exec, lv_t *port, token_t *tok) {
             meta_symbol = lisp_create_symbol("unquote");
 
         t_next = c_get_token(exec, port);
-        return lisp_create_pair(meta_symbol, c_parse_sexpr(exec, port, t_next));
+        return lisp_create_pair(meta_symbol, lisp_create_pair(c_parse_sexpr(exec, port, t_next), NULL));
 
     case T_OPENPAREN:
         t_next = c_get_token(exec, port);
@@ -408,7 +411,7 @@ static lv_t *c_parse_sexpr(lexec_t *exec, lv_t *port, token_t *tok) {
         break;
 
     case T_EOF:
-        return lisp_create_err(les_read);
+        rt_assert(0, le_syntax, "unexpected eof");
 
     default:
         return c_parse_atom(exec, port, tok);
@@ -418,7 +421,7 @@ static lv_t *c_parse_sexpr(lexec_t *exec, lv_t *port, token_t *tok) {
 }
 
 static lv_t *c_parse_list(lexec_t *exec, lv_t *port, token_t *tok) {
-    lv_t *res, *ptr, *pnew;
+    lv_t *res, *ptr, *pnew, *next_item;
     token_t *t_next;
 
     res = NULL;
@@ -431,16 +434,29 @@ static lv_t *c_parse_list(lexec_t *exec, lv_t *port, token_t *tok) {
             t_next = c_get_token(exec, port);
             rt_assert(ptr, le_syntax, "unexpected '.'");
 
-            L_CDR(ptr) = c_parse_sexpr(exec, port, t_next);
+            next_item = c_parse_sexpr(exec, port, t_next);
+            if(next_item->type != l_null) {
+                L_CDR(ptr) = next_item;
+            }
+
             t_next = c_get_token(exec, port);
             rt_assert(t_next->tok == T_CLOSEPAREN, le_syntax, "expecting ')'");
             return res;
+
+        case T_EOF:
+            rt_assert(0, le_syntax, "missing close paren");
+            break;
+
         case T_CLOSEPAREN:
             if(!res)
                 return lisp_create_null();
             return res;
+
         default:
-            pnew = lisp_create_pair(c_parse_sexpr(exec, port, t_next), NULL);
+            next_item = c_parse_sexpr(exec, port, t_next);
+
+            /* otherwise, it's not a () */
+            pnew = lisp_create_pair(next_item, NULL);
             if(!ptr) {
                 res = pnew;
                 ptr = pnew;
@@ -504,4 +520,65 @@ lv_t *p_toktest(lexec_t *exec, lv_t *v) {
     }
     fprintf(stderr, "\n");
     return lisp_create_null();
+}
+
+/**
+ * this is _not_ p_read.  this is a c courtesy wrapper
+ * that assume reading from a repl.
+ *
+ * it returns a list of lv_t, suitable for sequential
+ * eval.  if there is no exception context present, a
+ * default exception context will be provided.
+ *
+ * on error, an error object will be returned (le_read).  if
+ * the error is due to incomplete data (unterminated
+ * string or list), then an error of subtype
+ * les_incomplete will be returned.
+ */
+lv_t *c_parse_string(lexec_t *exec, char *str) {
+    jmp_buf jb;
+    lv_t *res, *current;
+    int exc;
+    lv_t *l_port, *l_str;
+
+    assert(exec);
+    assert(str);
+
+    l_str = lisp_create_string(str);
+    l_port = c_open_string(exec, lisp_create_pair(l_str, NULL), PD_INPUT);
+
+    lisp_exec_push_ex(exec, &jb);
+
+    res = NULL;
+
+    /* right now, we return a lisp error object
+     * on eof, and rt_assert for any kind of parse
+     * error */
+    if((exc = setjmp(jb)) == 0) {
+        while(1) {
+            current = c_parse(exec, l_port);
+            if(current->type == l_err) { /* eof */
+                if(!res)
+                    return lisp_create_null();
+                return res;
+            }
+            /* one more valid term */
+            if(!res) {
+                res = lisp_create_pair(current, NULL);
+            } else {
+                L_CDR(res) = lisp_create_pair(current, NULL);
+                res = L_CDR(res);
+            }
+        }
+        /* this gets automatically popped on an exception */
+        lisp_pop_ex(exec);
+    }
+
+    /* we'll let gc take care of the incomplete list */
+    if(exec->ehandler)
+        exec->ehandler(exec);
+    else
+        default_ehandler(exec);
+
+    return lisp_create_err(les_read);
 }

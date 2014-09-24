@@ -28,6 +28,8 @@
 
 #include "lisp-types.h"
 #include "primitives.h"
+#include "ports.h"
+#include "parser.h"
 
 static int is_nil(lv_t *v) {
     return(v && v->type == l_null);
@@ -71,11 +73,21 @@ void repl(int level) {
         if(!*cmd)
             continue;
 
-        parsed_value = lisp_parse_string(cmd);
-        if(!parsed_value) {
-            fprintf(stderr, "synax error\n");
+        parsed_value = c_parse_string(exec, cmd);
+
+        /* null input */
+        if(parsed_value->type == l_null)
             continue;
-        }
+
+        /* a non-continuable error */
+        if(parsed_value->type == l_err)
+            continue;
+
+        /* parsed_value = lisp_parse_string(cmd); */
+        /* if(!parsed_value) { */
+        /*     fprintf(stderr, "synax error\n"); */
+        /*     continue; */
+        /* } */
 
         // e!
         result = lisp_execute(exec, parsed_value);

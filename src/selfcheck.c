@@ -8,6 +8,7 @@
 
 #include "lisp-types.h"
 #include "primitives.h"
+#include "parser.h"
 
 #define COLOR_RED    "\x1b[31m"
 #define COLOR_GREEN  "\x1b[32m"
@@ -125,7 +126,7 @@ int run_scm_tests(char *testdir) {
             snprintf(buffer, sizeof(buffer), "(load \"%s/%s\")",
                      testdir, de->d_name);
 
-            c_sequential_eval(exec, lisp_parse_string(buffer));
+            c_sequential_eval(exec, c_parse_string(exec, buffer));
 
             /* run through the environment, calling all the tests */
             void maybe_run_test(lv_t *l_n, lv_t *l_t) {
@@ -142,7 +143,7 @@ int run_scm_tests(char *testdir) {
                     print_test_start(test);
                     snprintf(buffer, sizeof(buffer), "(%s)", test);
 
-                    lisp_execute(exec, lisp_parse_string(buffer));
+                    lisp_execute(exec, c_parse_string(exec, buffer));
 
                     err = exec->exc;
 
@@ -169,15 +170,20 @@ int main(int argc, char *argv[]) {
     test_t *current = test_list;
     int success = 1;
     int result;
+    lexec_t *exec;
+
 
     printf("Testing.\n------------------------------------------------\n");
 
     while((current->test_fn) && (current_errors < MAX_ERRORS)) {
+        exec = lisp_context_new(5);
+        lisp_set_ehandler(exec, null_ehandler);
+
         current_test = current->test_name;
 
         print_test_start(current->test_name);
 
-        result = current->test_fn(NULL);
+        result = current->test_fn(exec);
 
         if(result)
             print_test_result(SUCCESS);

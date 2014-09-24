@@ -26,4 +26,8 @@ extern lv_t *p_toktest(lexec_t *exec, lv_t *v);
 extern lv_t *p_parsetest(lexec_t *exec, lv_t *v);
 extern lv_t *p_read(lexec_t *exec, lv_t *v);
 
+/* FIXME: this shouldn't be here */
+extern lv_t *c_parse(lexec_t *exec, lv_t *port);
+extern lv_t *c_parse_string(lexec_t *exec, char *str);
+
 #endif /* _PARSER_H_ */

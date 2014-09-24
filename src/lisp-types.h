@@ -84,7 +84,8 @@ typedef enum lisp_funtype_t {
 typedef enum lisp_errsubtype_t {
     les_read,
     les_file,
-    les_eof
+    les_eof,
+    les_incomplete     /* incomplete parse */
 } lisp_errsubtype_t;
 
 typedef struct lv_t lv_t;

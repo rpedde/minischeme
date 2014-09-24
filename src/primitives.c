@@ -260,7 +260,7 @@ void c_rt_assert(lexec_t *exec, lisp_exception_t etype, char *msg) {
     jmp_buf *pjb;
 
     assert(exec);
-    assert(exec->ex_stack);
+    /* assert(exec->ex_stack); */
 
     exec->exc = etype;
     exec->msg = msg;
