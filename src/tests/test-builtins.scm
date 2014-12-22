@@ -65,3 +65,10 @@
 ;;     (assert
 ;;      (equal? '(2 3 4)
 ;; 	     ((lambda (a . b) b) 1 2 3 4)))))
+
+(define test-append
+  (lambda ()
+    (begin
+      (assert (equal? (append '() 1) 1))
+      (assert (equal? (append '(1 2) '(3 . 4) '(1 2 3 . 4))))
+      (assert (equal? (append '(1 2) '(3 4) '(1 2 3 4)))))))
