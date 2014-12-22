@@ -70,5 +70,18 @@
   (lambda ()
     (begin
       (assert (equal? (append '() 1) 1))
-      (assert (equal? (append '(1 2) '(3 . 4) '(1 2 3 . 4))))
-      (assert (equal? (append '(1 2) '(3 4) '(1 2 3 4)))))))
+      (assert (equal? (append '(1 2) '(3 . 4)) '(1 2 3 . 4)))
+      (assert (equal? (append '(1 2) '(3 4)) '(1 2 3 4)))
+)))
+
+(define test-list1
+  (lambda ()
+    (assert (equal? '() (list)))))
+
+(define test-list2
+  (lambda ()
+    (assert (equal? '(1 2 3) (list 1 2 3)))))
+
+(define test-list3
+  (lambda ()
+    (assert (equal? (list 'a (+ 3 4) 'b) '(a 7 b)))))

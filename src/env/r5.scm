@@ -37,6 +37,7 @@
 (define write p-write)
 (define format p-format)
 (define append p-append)
+(define list p-list)
 
 ;; caar...cddddr
 (define caar (lambda (x) (car (car (x)))))

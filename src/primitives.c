@@ -98,6 +98,7 @@ static environment_list_t s_env_prim[] = {
     { "p-write", p_write },
     { "p-format", p_format },
     { "p-append", p_append },
+    { "p-list", p_list },
 
     // error functions
     { "p-error-object?", p_error_objectp },
@@ -1743,4 +1744,17 @@ lv_t *p_append(lexec_t *exec, lv_t *v) {
     }
 
     return r;
+}
+
+/**
+ * (list ...)
+ */
+lv_t *p_list(lexec_t *exec, lv_t *v) {
+    assert(exec && v);
+    assert((v->type == l_pair) || (v->type == l_null));
+
+    if(v->type == l_null)
+        return lisp_create_null();
+
+    return lisp_dup_item(v);
 }

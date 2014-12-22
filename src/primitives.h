@@ -88,6 +88,7 @@ extern lv_t *lisp_args_overlay(lexec_t *exec, lv_t *formals, lv_t *args);
  * builtin-ish
  */
 extern lv_t *p_append(lexec_t *exec, lv_t *v);
+extern lv_t *p_list(lexec_t *exec, lv_t *v);
 
 
 /**
