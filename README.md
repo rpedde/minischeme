@@ -86,7 +86,7 @@ That said, this is general status toward a r[57]ish scheme:
 * [X] list? (library?)
 * [ ] list (library)
 * [X] length (library?)
-* [ ] append (library)
+* [X] append (library)
 * [ ] reverse (library)
 * [ ] tail-list (library)
 * [ ] list-ref (library)

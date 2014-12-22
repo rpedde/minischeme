@@ -97,6 +97,7 @@ static environment_list_t s_env_prim[] = {
     { "p-display", p_display },
     { "p-write", p_write },
     { "p-format", p_format },
+    { "p-append", p_append },
 
     // error functions
     { "p-error-object?", p_error_objectp },
@@ -866,7 +867,7 @@ lv_t *lisp_args_overlay(lexec_t *exec, lv_t *formals, lv_t *args) {
 
     /* single arg gets the whole list */
     if(pf->type == l_sym) {
-        c_hash_insert(env_layer, pf, lisp_copy_list(pa));
+        c_hash_insert(env_layer, pf, lisp_dup_item(pa));
         return env_layer;
     }
 
@@ -882,7 +883,7 @@ lv_t *lisp_args_overlay(lexec_t *exec, lv_t *formals, lv_t *args) {
             if(!pa) {
                 c_hash_insert(env_layer, pf, lisp_create_null());
             } else {
-                c_hash_insert(env_layer, pf, lisp_copy_list(pa));
+                c_hash_insert(env_layer, pf, lisp_dup_item(pa));
             }
             return env_layer;
         }
@@ -1439,29 +1440,68 @@ lv_t *lisp_wrap_type(char *symv, lv_t *v) {
     return car;
 }
 
+
 /**
- * copy a list to a new list
+ * dup an object
  */
-lv_t *lisp_copy_list(lv_t *v) {
+lv_t *lisp_dup_item(lv_t *v) {
+    lv_t *r;
     lv_t *vptr = v;
-    lv_t *result = lisp_create_pair(NULL, NULL);
-    lv_t *rptr = result;
+    lv_t *rptr;
+    assert(v);
 
-    if(v->type == l_null)
+    switch(v->type) {
+    case l_int:
+        r = lisp_create_int(0);
+        mpz_set(L_INT(r), L_INT(v));
+        return r;
+    case l_rational:
+        r = lisp_create_rational(1, 1);
+        mpq_set(L_RAT(r), L_RAT(v));
+        return r;
+    case l_float:
+        r = lisp_create_float(0.0);
+        mpfr_set(L_FLOAT(r), L_FLOAT(v), MPFR_ROUND_TYPE);
+        return r;
+    case l_bool:
         return v;
+    case l_sym:
+        return lisp_create_symbol(L_SYM(v));
+    case l_str:
+        return lisp_create_string(L_STR(v));
+    case l_null:
+        return v;
+    case l_port:
+        /* can't really copy this -- it's a socket or a file
+           handle, or something else.  */
+        return v;
+    case l_char:
+        return lisp_create_char(L_CHAR(v));
+    case l_fn:
+        /* can't really copy this either, but it's essentially
+           immutable */
+        return v;
+    case l_err:
+        return lisp_create_err(L_ERR(v));
+    case l_hash:
+        /* FIXME: should really be a copy */
+        return v;
+    case l_pair:
+        r = lisp_create_pair(NULL, NULL);
+        rptr = r;
 
-    assert(v->type == l_pair);
-
-    while(vptr && L_CAR(vptr)) {
-        L_CAR(rptr) = L_CAR(vptr);
-        vptr = L_CDR(vptr);
-        if(vptr) {
-            L_CDR(rptr) = lisp_create_pair(NULL, NULL);
-            rptr = L_CDR(rptr);
+        while(vptr && L_CAR(vptr)) {
+            L_CAR(rptr) = lisp_dup_item(L_CAR(vptr));
+            vptr = L_CDR(vptr);
+            if(vptr) {
+                L_CDR(rptr) = lisp_create_pair(NULL, NULL);
+                rptr = L_CDR(rptr);
+            }
         }
+        return r;
     }
 
-    return result;
+    assert(0);
 }
 
 /**
@@ -1672,4 +1712,35 @@ lv_t *p_read_errorp(lexec_t *exec, lv_t *v) {
  */
 lv_t *p_eof_errorp(lexec_t *exec, lv_t *v) {
     return c_error_type(exec, v, les_eof);
+}
+
+/**
+ * (append list ...)
+ */
+lv_t *p_append(lexec_t *exec, lv_t *v) {
+    lv_t *r;
+    lv_t *tptr, *vptr;
+
+    assert(exec && v);
+    assert(v->type == l_pair);
+
+    rt_assert(c_list_length(v) > 1, le_arity, "expecting at least 1 arg");
+
+    r = L_CAR(v);
+    vptr = L_CDR(v);
+
+    while(vptr) {
+        r = lisp_dup_item(r);
+        if(r->type == l_null)
+            r = L_CAR(vptr);
+        else {
+            tptr = r;
+            while(L_CDR(tptr))
+                tptr = L_CDR(tptr);
+            L_CDR(tptr) = L_CAR(vptr);
+        }
+        vptr = L_CDR(vptr);
+    }
+
+    return r;
 }

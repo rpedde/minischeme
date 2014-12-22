@@ -81,8 +81,14 @@ extern lv_t *lisp_parse_file(char *file);
 extern lv_t *lisp_exec_fn(lexec_t *exec, lv_t *fn, lv_t *args);
 extern lv_t *lisp_begin(lexec_t *exec, lv_t *v);
 extern void lisp_stamp_value(lv_t *v, int row, int col, char *file);
-extern lv_t *lisp_copy_list(lv_t *v);
+extern lv_t *lisp_dup_item(lv_t *v);
 extern lv_t *lisp_args_overlay(lexec_t *exec, lv_t *formals, lv_t *args);
+
+/**
+ * builtin-ish
+ */
+extern lv_t *p_append(lexec_t *exec, lv_t *v);
+
 
 /**
  * hash utilities
