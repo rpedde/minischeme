@@ -24,5 +24,7 @@
 extern lv_t *p_append(lexec_t *exec, lv_t *v);
 extern lv_t *p_list(lexec_t *exec, lv_t *v);
 extern lv_t *p_reverse(lexec_t *exec, lv_t *v);
+extern lv_t *p_list_tail(lexec_t *exec, lv_t *v);
+extern lv_t *p_list_ref(lexec_t *exec, lv_t *v);
 
 #endif /* _LIST_H_ */

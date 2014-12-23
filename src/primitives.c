@@ -98,9 +98,13 @@ static environment_list_t s_env_prim[] = {
     { "p-display", p_display },
     { "p-write", p_write },
     { "p-format", p_format },
+
+    // list and pair functions
     { "p-append", p_append },
     { "p-list", p_list },
     { "p-reverse", p_reverse },
+    { "p-list-tail", p_list_tail },
+    { "p-list-ref", p_list_ref },
 
     // error functions
     { "p-error-object?", p_error_objectp },
@@ -1649,6 +1653,27 @@ lv_t *lisp_execute(lexec_t *exec, lv_t *v) {
         exec->ehandler(exec);
 
     return NULL;
+}
+
+/**
+ * get the kth item from a list
+ */
+lv_t *lisp_get_kth(lv_t *v, int k) {
+    lv_t *vptr;
+
+    assert(v->type == l_null || v->type == l_pair);
+
+    vptr = v;
+
+    while(k && vptr && vptr->type == l_pair) {
+        k--;
+        vptr = L_CDR(vptr);
+    }
+
+    if(k)
+        return NULL;
+
+    return vptr;
 }
 
 /**

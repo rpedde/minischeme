@@ -36,9 +36,6 @@
 (define display p-display)
 (define write p-write)
 (define format p-format)
-(define append p-append)
-(define list p-list)
-(define reverse p-reverse)
 
 ;; caar...cddddr
 (define caar (lambda (x) (car (car (x)))))
@@ -71,6 +68,13 @@
 (define cddadr (lambda (x) (cdr (cdr (car (cdr x))))))
 (define cdddar (lambda (x) (cdr (cdr (cdr (car x))))))
 (define cddddr (lambda (x) (cdr (cdr (cdr (cdr x))))))
+
+;; lists and pairs
+(define append p-append)
+(define list p-list)
+(define reverse p-reverse)
+(define list-tail p-list-tail)
+(define list-ref p-list-ref)
 
 ;; error - this is r7, not r5
 ;; (define error-object? p-error-object?)

@@ -98,3 +98,63 @@ lv_t *p_reverse(lexec_t *exec, lv_t *v) {
 
     return r;
 }
+
+/**
+ * (list-tail list k)
+ *
+ * return the sublist of list obtained by omitting the first k elements
+ */
+lv_t *p_list_tail(lexec_t *exec, lv_t *v) {
+    lv_t *r, *a0, *a1;
+    int k;
+
+    assert(exec && v);
+    assert((v->type == l_pair) || (v->type == l_null));
+
+    rt_assert(c_list_length(v) == 2, le_arity, "expecting 2 args");
+
+    a0 = L_CAR(v);
+    a1 = L_CADR(v);
+
+    rt_assert(a0->type == l_pair, le_type, "expecting list as arg0");
+    rt_assert(a1->type == l_int, le_type, "expecting int as arg1");
+
+    k = mpz_get_si(L_INT(a1));
+
+    r = lisp_get_kth(a0, k);
+
+    rt_assert(r, le_type, "list too short");
+
+    return r;
+}
+
+
+/**
+ * (list-ref list k)
+ *
+ * returns the kth element of list (car (list-tail list k))
+ */
+lv_t *p_list_ref(lexec_t *exec, lv_t *v) {
+    lv_t *r, *a0, *a1;
+    int k;
+
+    assert(exec && v);
+    assert((v->type == l_pair) || (v->type == l_null));
+
+    rt_assert(c_list_length(v) == 2, le_arity, "expecting 2 args");
+
+    a0 = L_CAR(v);
+    a1 = L_CADR(v);
+
+    rt_assert(a0->type == l_pair, le_type, "expecting list as arg0");
+    rt_assert(a1->type == l_int, le_type, "expecting int as arg1");
+
+    k = mpz_get_si(L_INT(a1));
+
+    r = lisp_get_kth(a0, k);
+
+    rt_assert(r, le_type, "list too short");
+
+    rt_assert(r->type == l_pair, le_type, "improper list");
+    return L_CAR(r);
+}
