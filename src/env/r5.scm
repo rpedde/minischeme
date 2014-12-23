@@ -38,6 +38,7 @@
 (define format p-format)
 (define append p-append)
 (define list p-list)
+(define reverse p-reverse)
 
 ;; caar...cddddr
 (define caar (lambda (x) (car (car (x)))))

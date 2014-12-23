@@ -40,6 +40,7 @@
 #include "char.h"
 #include "math.h"
 #include "parser.h"
+#include "list.h"
 
 typedef struct hash_node_t {
     uint32_t key;
@@ -99,6 +100,7 @@ static environment_list_t s_env_prim[] = {
     { "p-format", p_format },
     { "p-append", p_append },
     { "p-list", p_list },
+    { "p-reverse", p_reverse },
 
     // error functions
     { "p-error-object?", p_error_objectp },
@@ -1713,48 +1715,4 @@ lv_t *p_read_errorp(lexec_t *exec, lv_t *v) {
  */
 lv_t *p_eof_errorp(lexec_t *exec, lv_t *v) {
     return c_error_type(exec, v, les_eof);
-}
-
-/**
- * (append list ...)
- */
-lv_t *p_append(lexec_t *exec, lv_t *v) {
-    lv_t *r;
-    lv_t *tptr, *vptr;
-
-    assert(exec && v);
-    assert(v->type == l_pair);
-
-    rt_assert(c_list_length(v) > 1, le_arity, "expecting at least 1 arg");
-
-    r = L_CAR(v);
-    vptr = L_CDR(v);
-
-    while(vptr) {
-        r = lisp_dup_item(r);
-        if(r->type == l_null)
-            r = L_CAR(vptr);
-        else {
-            tptr = r;
-            while(L_CDR(tptr))
-                tptr = L_CDR(tptr);
-            L_CDR(tptr) = L_CAR(vptr);
-        }
-        vptr = L_CDR(vptr);
-    }
-
-    return r;
-}
-
-/**
- * (list ...)
- */
-lv_t *p_list(lexec_t *exec, lv_t *v) {
-    assert(exec && v);
-    assert((v->type == l_pair) || (v->type == l_null));
-
-    if(v->type == l_null)
-        return lisp_create_null();
-
-    return lisp_dup_item(v);
 }
