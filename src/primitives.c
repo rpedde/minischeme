@@ -163,6 +163,7 @@ static environment_list_t s_env_prim[] = {
     { "p-asin", p_asin },
     { "p-acos", p_acos },
     { "p-atan", p_atan },
+    { "p-number->string", p_number2string },
 
     // SRFI-6
     { "p-open-input-string", p_open_input_string },

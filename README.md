@@ -65,7 +65,7 @@ That said, this is general status toward a r[57]ish scheme:
 * [ ] sqrt
 * [ ] expt
 
-* [ ] number->string
+* [X] number->string
 * [ ] string->number
 
 ## boolean ##

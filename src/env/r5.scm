@@ -135,6 +135,7 @@
 (define asin p-asin)
 (define acos p-acos)
 (define atan p-atan)
+(define number->string p-number->string)
 
 ;; srfi-6
 (define open-input-string p-open-input-string)

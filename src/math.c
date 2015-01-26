@@ -679,7 +679,15 @@ lv_t *p_expt(lexec_t *exec, lv_t *v) {
 
 
 lv_t *p_number2string(lexec_t *exec, lv_t *v) {
+    assert(exec && v->type == l_pair);
+    rt_assert(c_list_length(v) == 1, le_arity, "expecting 1 argument");
+
+    lv_t *a0 = L_CAR(v);
+
+    rt_assert(math_numeric(a0), le_type, "expecting numeric type");
+    return lisp_str_from_value(exec, a0, 0);
 }
 
 lv_t *p_string2number(lexec_t *exec, lv_t *v) {
 }
+
