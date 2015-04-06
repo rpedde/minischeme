@@ -201,7 +201,7 @@ That said, this is general status toward a r[57]ish scheme:
 * [X] read
 * [X] read-char
 * [X] peek-char
-* [ ] eof-object?
+* [X ] eof-object? (eof-object?)
 * [ ] char-ready?
 
 ## output ##
